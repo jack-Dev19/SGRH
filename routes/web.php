@@ -72,15 +72,12 @@ Route::middleware('auth')->group(function () {
     Route::middleware('role:admin')->prefix('admin')->name('admin.')->group(function () {
 
         Route::get('/dashboard', [AdminDashboard::class, 'index'])->name('dashboard');
-
-        // --- Futures routes Admin (à décommenter plus tard) ---
-        // Route::resource('users', UserController::class);
-        // Route::resource('roles', RoleController::class);
-        // Route::resource('permissions', PermissionController::class);
-        // Route::get('/backups', [BackupController::class, 'index'])->name('backups');
-        // Route::get('/logs', [LogController::class, 'index'])->name('logs');
-        // Route::get('/settings', [SettingController::class, 'index'])->name('settings');
-
+    
+        // =============================================
+        // MODULE EMPLOYÉS (CRUD complet)
+        // =============================================
+        Route::resource('employees', \App\Http\Controllers\Admin\EmployeeController::class);
+    
     });
 
 
