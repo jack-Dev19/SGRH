@@ -72,12 +72,57 @@ Route::middleware('auth')->group(function () {
     Route::middleware('role:admin')->prefix('admin')->name('admin.')->group(function () {
 
         Route::get('/dashboard', [AdminDashboard::class, 'index'])->name('dashboard');
-    
+
         // =============================================
         // MODULE EMPLOYÉS (CRUD complet)
         // =============================================
         Route::resource('employees', \App\Http\Controllers\Admin\EmployeeController::class);
-    
+
+
+        //Test
+        // =============================================
+        // MODULE DÉPARTEMENTS
+        // (Les vues existent, le CRUD réel viendra plus tard)
+        // =============================================
+        Route::get('/departements', function () {
+            return view('admin.departements.index');
+        })->name('departements.index');
+
+        Route::get('/departements/create', function () {
+            return view('admin.departements.create');
+        })->name('departements.create');
+
+        Route::post('/departements', function () {
+            return redirect()->route('admin.departements.index')
+                ->with('success', 'Département créé avec succès !');
+        })->name('departements.store');
+
+        Route::get('/departements/{departement}/edit', function ($departement) {
+            return view('admin.departements.edit', compact('departement'));
+        })->name('departements.edit');
+
+        Route::put('/departements/{departement}', function ($departement) {
+            return redirect()->route('admin.departements.index')
+                ->with('success', 'Département mis à jour !');
+        })->name('departements.update');
+
+        Route::delete('/departements/{departement}', function ($departement) {
+            return redirect()->route('admin.departements.index')
+                ->with('success', 'Département supprimé !');
+        })->name('departements.destroy');
+
+        // =============================================
+        // MODULE POSTES (statiques)
+        // =============================================
+        Route::get('/postes', fn() => view('admin.postes.index'))->name('postes.index');
+        Route::get('/postes/create', fn() => view('admin.postes.create'))->name('postes.create');
+        Route::post('/postes', fn() => redirect()->route('admin.postes.index')->with('success', 'Poste créé !'))->name('postes.store');
+        Route::get('/postes/{poste}/edit', fn($poste) => view('admin.postes.edit', compact('poste')))->name('postes.edit');
+        Route::put('/postes/{poste}', fn($poste) => redirect()->route('admin.postes.index')->with('success', 'Poste mis à jour !'))->name('postes.update');
+        Route::delete('/postes/{poste}', fn($poste) => redirect()->route('admin.postes.index')->with('success', 'Poste supprimé !'))->name('postes.destroy');
+
+
+
     });
 
 
