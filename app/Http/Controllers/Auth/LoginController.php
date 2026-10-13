@@ -14,9 +14,16 @@ class LoginController extends Controller
      * =============================================
      * AFFICHER LE FORMULAIRE DE CONNEXION
      * =============================================
+     * Route : GET /login
+     * Accessible aux invités uniquement (middleware guest)
      */
     public function showLoginForm()
     {
+        // Si l'utilisateur est déjà connecté, on le redirige vers son dashboard
+        if (Auth::check()) {
+            return $this->redirectBasedOnRole(Auth::user()->role->nom);
+        }
+
         return view('auth.login');
     }
 
@@ -24,56 +31,89 @@ class LoginController extends Controller
      * =============================================
      * TRAITER LA CONNEXION
      * =============================================
-     * - Accepte email OU matricule
-     * - Vérifie le mot de passe
-     * - Redirige selon le rôle
+     * Route : POST /login
+     *
+     * Accepte :
+     * - Email OU matricule (détection automatique)
+     * - Mot de passe
+     * - Case "Se souvenir de moi"
      */
     public function login(Request $request)
     {
-        // 1. Validation des données
+        // =============================================
+        // 1. VALIDATION DES DONNÉES
+        // =============================================
         $request->validate([
             'email'    => 'required|string',
-            'password' => 'required|string',
+            'password' => 'required|string|min:6',
+        ], [
+            'email.required'    => 'L\'email ou le matricule est obligatoire.',
+            'password.required' => 'Le mot de passe est obligatoire.',
+            'password.min'      => 'Le mot de passe doit contenir au moins 6 caractères.',
         ]);
 
-        // 2. Anti-brute-force : Limiter les tentatives
+        // =============================================
+        // 2. ANTI-BRUTE-FORCE (max 5 tentatives/minute)
+        // =============================================
         $this->checkTooManyFailedAttempts($request);
 
-        // 3. Déterminer si l'entrée est un email ou un matricule
+        // =============================================
+        // 3. DÉTECTER SI C'EST UN EMAIL OU UN MATRICULE
+        // =============================================
+        // filter_var vérifie si c'est un email valide
+        // Sinon, on suppose que c'est un matricule
         $fieldType = filter_var($request->email, FILTER_VALIDATE_EMAIL)
             ? 'email'
             : 'matricule';
 
-        // 4. Préparer les credentials
+        // =============================================
+        // 4. PRÉPARER LES CREDENTIALS
+        // =============================================
         $credentials = [
-            $fieldType  => $request->email,
-            'password'  => $request->password,
+            $fieldType => $request->email, // 'email' ou 'matricule'
+            'password' => $request->password,
         ];
 
-        // 5. Ajouter une vérification du statut actif
+        // =============================================
+        // 5. VÉRIFIER QUE LE COMPTE EST ACTIF
+        // =============================================
+        // On ajoute 'statut' => true pour empêcher la connexion
+        // d'un utilisateur désactivé
         $credentials['statut'] = true;
 
-        // 6. Tentative de connexion
-        if (Auth::attempt($credentials, $request->has('remember'))) {
+        // =============================================
+        // 6. TENTATIVE DE CONNEXION
+        // =============================================
+        $remember = $request->has('remember');
 
-            // 6.1. Régénérer la session (sécurité)
+        if (Auth::attempt($credentials, $remember)) {
+
+            // 6.1. Régénérer la session (protection contre Session Fixation)
             $request->session()->regenerate();
 
-            // 6.2. Mettre à jour la date de dernière connexion
+            // 6.2. Récupérer l'utilisateur connecté
             $user = Auth::user();
-            $user->update(['last_login_at' => now()]);
 
-            // 6.3. Réinitialiser le compteur de tentatives
+            // 6.3. Mettre à jour la date de dernière connexion
+            $user->update([
+                'last_login_at' => now(),
+            ]);
+
+            // 6.4. Réinitialiser le compteur de tentatives
             RateLimiter::clear($this->throttleKey($request));
 
-            // 6.4. Rediriger selon le rôle
+            // 6.5. Rediriger selon le rôle
             return $this->redirectBasedOnRole($user->role->nom);
         }
 
-        // 7. Échec : Incrémenter le compteur
-        RateLimiter::hit($this->throttleKey($request));
+        // =============================================
+        // 7. ÉCHEC : INCRÉMENTER LE COMPTEUR
+        // =============================================
+        RateLimiter::hit($this->throttleKey($request), 60);
 
-        // 8. Retour avec erreur
+        // =============================================
+        // 8. RETOUR AVEC ERREUR
+        // =============================================
         throw ValidationException::withMessages([
             'email' => 'Les identifiants fournis ne correspondent pas à nos enregistrements.',
         ]);
@@ -83,6 +123,8 @@ class LoginController extends Controller
      * =============================================
      * REDIRECTION SELON LE RÔLE
      * =============================================
+     * @param  string  $role  Le nom du rôle (admin, rh, chef, employe)
+     * @return \Illuminate\Http\RedirectResponse
      */
     protected function redirectBasedOnRole(string $role)
     {
@@ -91,7 +133,7 @@ class LoginController extends Controller
             'rh'      => redirect()->intended(route('rh.dashboard')),
             'chef'    => redirect()->intended(route('chef.dashboard')),
             'employe' => redirect()->intended(route('employe.dashboard')),
-            default   => redirect('/'),
+            default   => redirect('/')->with('error', 'Rôle non reconnu.'),
         };
     }
 
@@ -99,40 +141,50 @@ class LoginController extends Controller
      * =============================================
      * DÉCONNEXION
      * =============================================
+     * Route : POST /logout
      */
     public function logout(Request $request)
     {
         // 1. Déconnecter l'utilisateur
         Auth::logout();
 
-        // 2. Invalider la session
+        // 2. Invalider la session en cours
         $request->session()->invalidate();
 
         // 3. Régénérer le token CSRF
         $request->session()->regenerateToken();
 
-        // 4. Rediriger vers l'accueil
-        return redirect('/')->with('success', 'Vous êtes déconnecté.');
+        // 4. Rediriger vers la page d'accueil avec message
+        return redirect()->route('login')
+            ->with('success', 'Vous avez été déconnecté avec succès.');
     }
 
     /**
      * =============================================
      * ANTI-BRUTE-FORCE
      * =============================================
-     * Limite à 5 tentatives par minute.
+     * Limite à 5 tentatives échouées par minute.
+     * Utilise le cache pour stocker le compteur.
      */
     protected function checkTooManyFailedAttempts(Request $request): void
     {
-        if (RateLimiter::tooManyAttempts($this->throttleKey($request), 5)) {
-            $seconds = RateLimiter::availableIn($this->throttleKey($request));
+        $key = $this->throttleKey($request);
+
+        if (RateLimiter::tooManyAttempts($key, 5)) {
+            $seconds = RateLimiter::availableIn($key);
+
             throw ValidationException::withMessages([
-                'email' => "Trop de tentatives. Réessayez dans {$seconds} secondes.",
+                'email' => "Trop de tentatives de connexion. Veuillez réessayer dans {$seconds} secondes.",
             ]);
         }
     }
 
     /**
-     * Clé unique pour identifier l'utilisateur qui essaie de se connecter.
+     * =============================================
+     * CLÉ UNIQUE POUR LE RATE LIMITER
+     * =============================================
+     * Combine l'email/matricule + l'IP pour identifier
+     * de manière unique chaque tentative.
      */
     protected function throttleKey(Request $request): string
     {
