@@ -2,7 +2,6 @@
 
 namespace App\Models;
 
-<<<<<<< HEAD
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -43,17 +42,3 @@ class Departement extends Model
     
     
 }
-=======
-use Illuminate\Database\Eloquent\Model;
-
-class Departement extends Model
-{
-    protected $fillable = ['nom', 'couleur'];
-
-    // Un département a plusieurs employés
-    public function employees()
-    {
-        return $this->hasMany(Employee::class);
-    }
-}
->>>>>>> 53d7c4557a96a51ce4c9fd11937087cee4018326
