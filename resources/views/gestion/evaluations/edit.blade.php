@@ -1,0 +1,249 @@
+@extends('layouts.dashboard')
+
+@section('title', 'Modifier évaluation')
+
+@section('content')
+
+<div class="max-w-6xl mx-auto py-4">
+
+    <a href="{{ route('gestion.evaluations.index') }}" class="inline-flex items-center gap-2 text-sm text-slate-500 hover:text-blue-600 transition mb-6">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 17l-5-5m0 0l5-5m-5 5h12"/>
+        </svg>
+        Retour aux évaluations
+    </a>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
+
+        {{-- CARTE ILLUSTRATION --}}
+        <div class="relative bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-600 rounded-[2rem] shadow-2xl shadow-blue-500/30 overflow-hidden min-h-[700px] flex flex-col lg:sticky lg:top-24">
+            <div class="relative z-10 px-10 pt-12 text-center">
+                <h2 class="text-3xl font-extrabold text-white uppercase tracking-wider mb-2">Modifier</h2>
+                <p class="text-sm text-blue-100 uppercase tracking-widest">L'évaluation</p>
+            </div>
+
+            <div class="relative z-10 flex-1 px-10 py-12 flex items-center justify-center">
+                <div class="text-center w-full">
+                    <div class="w-24 h-24 mx-auto mb-6 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center border-2 border-white/30">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                        </svg>
+                    </div>
+                    <p class="text-white font-bold text-lg mb-2">{{ $evaluation->titre }}</p>
+                    <p class="text-blue-100 text-sm">
+                        {{ $evaluation->employe?->nom_complet ?? 'Employé' }}
+                    </p>
+                </div>
+            </div>
+
+            <div class="absolute bottom-0 left-0 right-0 h-40 pointer-events-none">
+                <svg class="absolute bottom-0 left-0 w-full h-full" viewBox="0 0 500 150" preserveAspectRatio="none"><path d="M0,60 C150,130 350,0 500,60 L500,150 L0,150 Z" fill="#dbeafe" opacity="0.3"/></svg>
+                <svg class="absolute bottom-0 left-0 w-full h-full" viewBox="0 0 500 150" preserveAspectRatio="none"><path d="M0,90 C150,150 350,30 500,90 L500,150 L0,150 Z" fill="#a5b4fc" opacity="0.5"/></svg>
+                <svg class="absolute bottom-0 left-0 w-full h-full" viewBox="0 0 500 150" preserveAspectRatio="none"><path d="M0,120 C150,180 350,60 500,120 L500,150 L0,150 Z" fill="#818cf8" opacity="0.7"/></svg>
+            </div>
+        </div>
+
+        {{-- FORMULAIRE --}}
+        <div class="relative bg-white rounded-[2rem] shadow-2xl shadow-blue-500/20 overflow-hidden min-h-[700px] flex flex-col">
+            <form action="{{ route('gestion.evaluations.update', $evaluation) }}" method="POST" class="relative z-10 px-8 pt-10 pb-32 flex-1">
+                @csrf
+                @method('PUT')
+
+                <div class="text-center mb-6">
+                    <h2 class="text-3xl font-extrabold text-blue-700 uppercase tracking-wider mb-2">Modifier</h2>
+                    <p class="text-sm text-blue-400 uppercase tracking-widest">L'évaluation</p>
+                </div>
+
+                @if ($errors->any())
+                    <div class="bg-red-50 border border-red-200 text-red-600 text-xs p-3 rounded-2xl mb-5">
+                        @foreach ($errors->all() as $error) <p>• {{ $error }}</p> @endforeach
+                    </div>
+                @endif
+
+                <div class="space-y-3">
+
+                    {{-- Employé --}}
+                    <div class="relative">
+                        <div class="absolute left-4 top-1/2 -translate-y-1/2 text-blue-600 pointer-events-none">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+                        </div>
+                        <select name="employe_id" required
+                            class="w-full pl-12 pr-4 py-3.5 rounded-full bg-blue-100/70 text-sm text-slate-700 focus:outline-none focus:ring-4 focus:ring-blue-300/40 focus:bg-white transition appearance-none">
+                            @foreach($employes as $emp)
+                                <option value="{{ $emp->id }}" {{ old('employe_id', $evaluation->employe_id) === $emp->id ? 'selected' : '' }}>
+                                    {{ $emp->nom_complet }} ({{ $emp->matricule }})
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    {{-- Titre --}}
+                    <div class="relative">
+                        <div class="absolute left-4 top-1/2 -translate-y-1/2 text-blue-600 pointer-events-none">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/></svg>
+                        </div>
+                        <input type="text" name="titre" required value="{{ old('titre', $evaluation->titre) }}"
+                            class="w-full pl-12 pr-4 py-3.5 rounded-full bg-blue-100/70 text-sm text-slate-700 focus:outline-none focus:ring-4 focus:ring-blue-300/40 focus:bg-white transition">
+                    </div>
+
+                    {{-- Type + Période --}}
+                    <div class="grid grid-cols-2 gap-3">
+                        <div class="relative">
+                            <select name="type" required
+                                class="w-full px-4 py-3.5 rounded-full bg-blue-100/70 text-sm text-slate-700 focus:outline-none focus:ring-4 focus:ring-blue-300/40 focus:bg-white transition appearance-none">
+                                @foreach(['annuelle', 'trimestrielle', 'probatoire', 'ponctuelle'] as $type)
+                                    <option value="{{ $type }}" {{ old('type', $evaluation->type) === $type ? 'selected' : '' }}>
+                                        {{ ucfirst($type) }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="relative">
+                            <input type="text" name="periode" value="{{ old('periode', $evaluation->periode) }}" placeholder="Période"
+                                class="w-full px-4 py-3.5 rounded-full bg-blue-100/70 text-sm text-slate-700 placeholder-slate-500 focus:outline-none focus:ring-4 focus:ring-blue-300/40 focus:bg-white transition">
+                        </div>
+                    </div>
+
+                    {{-- Dates --}}
+                    <div class="grid grid-cols-3 gap-3">
+                        <input type="date" name="date_debut" value="{{ old('date_debut', $evaluation->date_debut?->format('Y-m-d')) }}"
+                            class="w-full px-3 py-3.5 rounded-full bg-blue-100/70 text-xs text-slate-700 focus:outline-none focus:ring-4 focus:ring-blue-300/40 focus:bg-white transition">
+                        <input type="date" name="date_fin" value="{{ old('date_fin', $evaluation->date_fin?->format('Y-m-d')) }}"
+                            class="w-full px-3 py-3.5 rounded-full bg-blue-100/70 text-xs text-slate-700 focus:outline-none focus:ring-4 focus:ring-blue-300/40 focus:bg-white transition">
+                        <input type="date" name="date_evaluation" required value="{{ old('date_evaluation', $evaluation->date_evaluation?->format('Y-m-d')) }}"
+                            class="w-full px-3 py-3.5 rounded-full bg-blue-100/70 text-xs text-slate-700 focus:outline-none focus:ring-4 focus:ring-blue-300/40 focus:bg-white transition">
+                    </div>
+
+                    {{-- Score + Niveau --}}
+                    <div class="grid grid-cols-2 gap-3">
+                        <div class="relative">
+                            <div class="absolute left-4 top-1/2 -translate-y-1/2 text-blue-600 pointer-events-none">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+                            </div>
+                            <input type="number" name="score_global" min="0" max="100" step="0.01" value="{{ old('score_global', $evaluation->score_global) }}" placeholder="Score /100"
+                                class="w-full pl-12 pr-4 py-3.5 rounded-full bg-blue-100/70 text-sm text-slate-700 placeholder-slate-500 focus:outline-none focus:ring-4 focus:ring-blue-300/40 focus:bg-white transition">
+                        </div>
+                        <div class="relative">
+                            <select name="niveau_appreciation_id"
+                                class="w-full px-4 py-3.5 rounded-full bg-blue-100/70 text-sm text-slate-700 focus:outline-none focus:ring-4 focus:ring-blue-300/40 focus:bg-white transition appearance-none">
+                                <option value="">— Niveau —</option>
+                                @foreach($niveaux as $niveau)
+                                    <option value="{{ $niveau->id }}" {{ old('niveau_appreciation_id', $evaluation->niveau_appreciation_id) === $niveau->id ? 'selected' : '' }}>
+                                        {{ $niveau->nom }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
+                    </div>
+
+                    {{-- Appréciation --}}
+                    <div class="relative">
+                        <div class="absolute left-4 top-1/2 -translate-y-1/2 text-blue-600 pointer-events-none">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"/></svg>
+                        </div>
+                        <input type="text" name="appreciation" value="{{ old('appreciation', $evaluation->appreciation) }}" placeholder="Appréciation"
+                            class="w-full pl-12 pr-4 py-3.5 rounded-full bg-blue-100/70 text-sm text-slate-700 placeholder-slate-500 focus:outline-none focus:ring-4 focus:ring-blue-300/40 focus:bg-white transition">
+                    </div>
+
+                    {{-- Statut --}}
+                    <div class="relative" data-dropdown="statut">
+                        <input type="hidden" name="statut" id="input-statut" value="{{ old('statut', $evaluation->statut) }}">
+                        <button type="button" id="dropdown-statut-btn"
+                            class="w-full inline-flex items-center justify-between gap-2 pl-12 pr-10 py-3.5 rounded-full bg-blue-100/70 text-sm text-slate-700 font-medium focus:outline-none focus:ring-4 focus:ring-blue-300/40 focus:bg-white transition">
+                            <div class="absolute left-4 top-1/2 -translate-y-1/2 text-blue-600 pointer-events-none">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                            </div>
+                            <span id="dropdown-statut-label" class="truncate text-left">
+                                @php
+                                    $statutLabels = ['en_cours' => 'En cours', 'terminee' => 'Terminée', 'annulee' => 'Annulée'];
+                                    echo $statutLabels[old('statut', $evaluation->statut)] ?? $evaluation->statut;
+                                @endphp
+                            </span>
+                            <svg id="dropdown-statut-chevron" xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-blue-600 transition-transform duration-300 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/></svg>
+                        </button>
+                        <div id="dropdown-statut-menu" class="hidden absolute top-full left-0 right-0 mt-2 bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden z-50">
+                            <button type="button" onclick="selectDropdown('statut', 'en_cours', 'En cours')"
+                                class="w-full text-left px-4 py-3 text-sm text-slate-700 hover:bg-yellow-50 hover:text-yellow-700 transition flex items-center gap-3">
+                                <span class="w-2.5 h-2.5 rounded-full bg-yellow-500"></span>
+                                En cours
+                            </button>
+                            <button type="button" onclick="selectDropdown('statut', 'terminee', 'Terminée')"
+                                class="w-full text-left px-4 py-3 text-sm text-slate-700 hover:bg-emerald-50 hover:text-emerald-700 transition border-t border-slate-100 flex items-center gap-3">
+                                <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+                                Terminée
+                            </button>
+                            <button type="button" onclick="selectDropdown('statut', 'annulee', 'Annulée')"
+                                class="w-full text-left px-4 py-3 text-sm text-slate-700 hover:bg-slate-50 transition border-t border-slate-100 flex items-center gap-3">
+                                <span class="w-2.5 h-2.5 rounded-full bg-slate-400"></span>
+                                Annulée
+                            </button>
+                        </div>
+                    </div>
+
+                    {{-- Commentaire + Recommandation --}}
+                    <textarea name="commentaire" rows="2" placeholder="Commentaire..."
+                        class="w-full px-4 py-3.5 rounded-2xl bg-blue-100/70 text-sm text-slate-700 placeholder-slate-500 focus:outline-none focus:ring-4 focus:ring-blue-300/40 focus:bg-white transition resize-none">{{ old('commentaire', $evaluation->commentaire) }}</textarea>
+
+                    <textarea name="recommandation" rows="2" placeholder="Recommandation..."
+                        class="w-full px-4 py-3.5 rounded-2xl bg-blue-100/70 text-sm text-slate-700 placeholder-slate-500 focus:outline-none focus:ring-4 focus:ring-blue-300/40 focus:bg-white transition resize-none">{{ old('recommandation', $evaluation->recommandation) }}</textarea>
+
+                </div>
+
+                <button type="submit"
+                    class="w-full mt-6 py-3.5 rounded-full bg-gradient-to-r from-blue-600 to-purple-600 text-white text-sm font-bold uppercase tracking-wider hover:from-blue-700 hover:to-purple-700 focus:outline-none focus:ring-4 focus:ring-blue-300/50 transition shadow-lg shadow-blue-500/30 transform hover:-translate-y-0.5">
+                    Enregistrer les modifications
+                </button>
+
+                <div class="text-center mt-4">
+                    <button type="button"
+                        onclick="if(confirm('⚠️ Supprimer définitivement cette évaluation ?')) { document.getElementById('delete-form').submit(); }"
+                        class="text-xs text-red-500 hover:text-red-700 hover:underline transition">
+                        Supprimer cette évaluation
+                    </button>
+                </div>
+            </form>
+
+            <div class="absolute bottom-0 left-0 right-0 h-40 pointer-events-none">
+                <svg class="absolute bottom-0 left-0 w-full h-full" viewBox="0 0 500 150" preserveAspectRatio="none"><path d="M0,60 C150,130 350,0 500,60 L500,150 L0,150 Z" fill="#dbeafe" opacity="0.6"/></svg>
+                <svg class="absolute bottom-0 left-0 w-full h-full" viewBox="0 0 500 150" preserveAspectRatio="none"><path d="M0,90 C150,150 350,30 500,90 L500,150 L0,150 Z" fill="#a5b4fc" opacity="0.7"/></svg>
+                <svg class="absolute bottom-0 left-0 w-full h-full" viewBox="0 0 500 150" preserveAspectRatio="none"><path d="M0,120 C150,180 350,60 500,120 L500,150 L0,150 Z" fill="#6366f1" opacity="0.8"/></svg>
+            </div>
+        </div>
+    </div>
+
+    <form id="delete-form" action="{{ route('gestion.evaluations.destroy', $evaluation) }}" method="POST" class="hidden">
+        @csrf
+        @method('DELETE')
+    </form>
+
+</div>
+
+@endsection
+
+@push('scripts')
+<script>
+    window.selectDropdown = function(type, value, label) {
+        document.getElementById('input-' + type).value = value;
+        document.getElementById('dropdown-' + type + '-label').textContent = label;
+        document.getElementById('dropdown-' + type + '-menu').classList.add('hidden');
+        document.getElementById('dropdown-' + type + '-chevron').style.transform = 'rotate(0deg)';
+    };
+    window.toggleDropdown = function(type) {
+        const menu = document.getElementById('dropdown-' + type + '-menu');
+        const chevron = document.getElementById('dropdown-' + type + '-chevron');
+        const isHidden = menu.classList.contains('hidden');
+        document.querySelectorAll('[id^="dropdown-"][id$="-menu"]').forEach(m => m.classList.add('hidden'));
+        document.querySelectorAll('[id^="dropdown-"][id$="-chevron"]').forEach(c => c.style.transform = 'rotate(0deg)');
+        if (isHidden) { menu.classList.remove('hidden'); chevron.style.transform = 'rotate(180deg)'; }
+    };
+    document.addEventListener('DOMContentLoaded', function() {
+        const btn = document.getElementById('dropdown-statut-btn');
+        if (btn) btn.addEventListener('click', e => { e.stopPropagation(); toggleDropdown('statut'); });
+        document.addEventListener('click', () => {
+            document.querySelectorAll('[id^="dropdown-"][id$="-menu"]').forEach(m => m.classList.add('hidden'));
+            document.querySelectorAll('[id^="dropdown-"][id$="-chevron"]').forEach(c => c.style.transform = 'rotate(0deg)');
+        });
+        document.querySelectorAll('[id^="dropdown-"][id$="-menu"]').forEach(m => m.addEventListener('click', e => e.stopPropagation()));
+    });
+</script>
+@endpush
