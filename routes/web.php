@@ -109,28 +109,50 @@ Route::middleware('auth')->group(function () {
         ->name('gestion.')
         ->group(function () {
 
+            // ------------------------------------------------------
             // Employés
+            // ------------------------------------------------------
             Route::resource('employes', EmployeController::class);
 
+            // ------------------------------------------------------
             // Départements
+            // ------------------------------------------------------
             Route::resource('departements', DepartementController::class);
 
+            // ------------------------------------------------------
             // Postes
+            // ------------------------------------------------------
             Route::resource('postes', PosteController::class);
 
+            // ------------------------------------------------------
             // Contrats
+            // ------------------------------------------------------
             Route::resource('contrats', ContratController::class);
 
-            // Congés
-            Route::resource('conges', CongeController::class);
-
+            // ------------------------------------------------------
             // Présences
+            // ------------------------------------------------------
             Route::resource('presences', PresenceController::class);
 
+            // ------------------------------------------------------
+            // Congés (CRUD + validation)
+            // ------------------------------------------------------
+            Route::resource('conges', CongeController::class);
+
+            // Actions spéciales congés (approuver / refuser)
+            Route::post('conges/{conge}/approuver', [CongeController::class, 'approuver'])
+                ->name('conges.approuver');
+            Route::post('conges/{conge}/refuser', [CongeController::class, 'refuser'])
+                ->name('conges.refuser');
+
+            // ------------------------------------------------------
             // Salaires
+            // ------------------------------------------------------
             Route::resource('salaires', SalaireController::class);
 
+            // ------------------------------------------------------
             // Évaluations
+            // ------------------------------------------------------
             Route::resource('evaluations', EvaluationController::class);
         });
 
