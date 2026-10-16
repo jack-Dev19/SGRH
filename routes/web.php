@@ -1,8 +1,16 @@
 <?php
 
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
-use App\Http\Controllers\Admin\ParametreController;
 use App\Http\Controllers\Auth\LoginController;
+use App\Http\Controllers\Chef\CongeController as ChefCongeController;
+use App\Http\Controllers\Chef\DashboardController as ChefDashboardController;
+use App\Http\Controllers\Chef\EquipeController as ChefEquipeController;
+use App\Http\Controllers\Chef\PresenceController as ChefPresenceController;
+use App\Http\Controllers\Employee\CongeController as EmployeeCongeController;
+use App\Http\Controllers\Employee\DashboardController as EmployeeDashboardController;
+use App\Http\Controllers\Employee\PaieController as EmployeePaieController;
+use App\Http\Controllers\Employee\PresenceController as EmployeePresenceController;
+use App\Http\Controllers\Employee\ProfilController as EmployeeProfilController;
 use App\Http\Controllers\Gestion\CongeController;
 use App\Http\Controllers\Gestion\ContratController;
 use App\Http\Controllers\Gestion\DepartementController;
@@ -81,24 +89,75 @@ Route::middleware('auth')->group(function () {
     });
 
     // ==============================================================
-    // CHEF DE DÉPARTEMENT
+    // CHEF DE DÉPARTEMENT — Espace
     // ==============================================================
-    Route::middleware('role:Chef de département')->group(function () {
-        Route::view('/chef/dashboard', 'chef.dashboard')->name('chef.dashboard');
-    });
+    Route::middleware('role:Chef de département')
+        ->prefix('chef')
+        ->name('chef.')
+        ->group(function () {
+
+            // Dashboard
+            Route::get('/dashboard', [ChefDashboardController::class, 'index'])
+                ->name('dashboard');
+
+            // Équipe
+            Route::get('/equipe', [ChefEquipeController::class, 'index'])
+                ->name('equipe.index');
+
+            // Congés à valider
+            Route::get('/conges', [ChefCongeController::class, 'index'])
+                ->name('conges.index');
+            Route::get('/conges/{id}', [ChefCongeController::class, 'show'])
+                ->name('conges.show');
+            Route::post('/conges/{id}/approuver', [ChefCongeController::class, 'approuver'])
+                ->name('conges.approuver');
+            Route::post('/conges/{id}/refuser', [ChefCongeController::class, 'refuser'])
+                ->name('conges.refuser');
+
+            // Présences de l'équipe
+            Route::get('/presences', [ChefPresenceController::class, 'index'])
+                ->name('presences.index');
+        });
 
     // ==============================================================
-    // EMPLOYÉ
+    // EMPLOYÉ — Espace personnel
     // ==============================================================
-    Route::middleware('role:Employé')->group(function () {
-        Route::view('/employe/dashboard', 'employee.dashboard')->name('employe.dashboard');
-    });
+    Route::middleware('role:Employé')
+        ->prefix('employe')
+        ->name('employe.')
+        ->group(function () {
+
+            // Dashboard
+            Route::get('/dashboard', [EmployeeDashboardController::class, 'index'])
+                ->name('dashboard');
+
+            // Profil
+            Route::get('/profil', [EmployeeProfilController::class, 'index'])
+                ->name('profil');
+
+            // Congés
+            Route::get('/conges', [EmployeeCongeController::class, 'index'])
+                ->name('conges.index');
+            Route::get('/conges/create', [EmployeeCongeController::class, 'create'])
+                ->name('conges.create');
+            Route::post('/conges', [EmployeeCongeController::class, 'store'])
+                ->name('conges.store');
+
+            // Paie
+            Route::get('/paie', [EmployeePaieController::class, 'index'])
+                ->name('paie.index');
+
+            // Présences
+            Route::get('/presences', [EmployeePresenceController::class, 'index'])
+                ->name('presences.index');
+        });
 
     // ==============================================================
     // RECRUTEUR
     // ==============================================================
     Route::middleware('role:Recruteur')->group(function () {
-        Route::view('/recruteur/dashboard', 'recruteur.dashboard')->name('recruteur.dashboard');
+        Route::view('/recruteur/dashboard', 'recruteur.dashboard')
+            ->name('recruteur.dashboard');
     });
 
     // ==============================================================
@@ -109,77 +168,32 @@ Route::middleware('auth')->group(function () {
         ->name('gestion.')
         ->group(function () {
 
-            // ------------------------------------------------------
             // Employés
-            // ------------------------------------------------------
             Route::resource('employes', EmployeController::class);
 
-            // ------------------------------------------------------
             // Départements
-            // ------------------------------------------------------
             Route::resource('departements', DepartementController::class);
 
-            // ------------------------------------------------------
             // Postes
-            // ------------------------------------------------------
             Route::resource('postes', PosteController::class);
 
-            // ------------------------------------------------------
             // Contrats
-            // ------------------------------------------------------
             Route::resource('contrats', ContratController::class);
 
-            // ------------------------------------------------------
             // Présences
-            // ------------------------------------------------------
             Route::resource('presences', PresenceController::class);
 
-            // ------------------------------------------------------
             // Congés (CRUD + validation)
-            // ------------------------------------------------------
             Route::resource('conges', CongeController::class);
-
-            // Actions spéciales congés (approuver / refuser)
             Route::post('conges/{conge}/approuver', [CongeController::class, 'approuver'])
                 ->name('conges.approuver');
             Route::post('conges/{conge}/refuser', [CongeController::class, 'refuser'])
                 ->name('conges.refuser');
 
-            // ------------------------------------------------------
             // Salaires
-            // ------------------------------------------------------
             Route::resource('salaires', SalaireController::class);
 
-            // ------------------------------------------------------
             // Évaluations
-            // ------------------------------------------------------
             Route::resource('evaluations', EvaluationController::class);
-        });
-
-    // ==============================================================
-    // PARAMÈTRES — Admin UNIQUEMENT
-    // ==============================================================
-    Route::middleware('role:Administrateur')
-        ->prefix('admin/parametres')
-        ->name('admin.parametres.')
-        ->group(function () {
-
-            Route::get('/', [ParametreController::class, 'index'])
-                ->name('index');
-
-            Route::get('/utilisateurs', [ParametreController::class, 'utilisateurs'])
-                ->name('utilisateurs');
-
-            Route::get('/roles', [ParametreController::class, 'roles'])
-                ->name('roles');
-
-            Route::get('/types-conges', [ParametreController::class, 'typesConges'])
-                ->name('types-conges');
-
-            Route::get('/jours-feries', [ParametreController::class, 'joursFeries'])
-                ->name('jours-feries');
-
-            Route::get('/historique', [ParametreController::class, 'historique'])
-                ->name('historique');
         });
 });
