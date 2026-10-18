@@ -7,6 +7,7 @@ use App\Models\Departement;
 use App\Models\Employe;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
+use Illuminate\Validation\Rule;
 
 /**
  * EmployeController (Gestion)
@@ -78,19 +79,61 @@ class EmployeController extends Controller
     {
         // Validation
         $validated = $request->validate([
-            'nom'            => ['required', 'string', 'max:100'],
-            'prenom'         => ['required', 'string', 'max:100'],
-            'matricule'      => ['required', 'string', 'unique:employes,matricule'],
-            'email'          => ['required', 'email', 'unique:employes,email'],
-            'telephone'      => ['nullable', 'string', 'max:20'],
-            'sexe'           => ['nullable', 'in:Homme,Femme'],
+            'nom' => ['required', 'string', 'max:100'],
+            'prenom' => ['required', 'string', 'max:100'],
+
+            'matricule' => [
+                'required',
+                'string',
+                'max:30',
+                'unique:employes,matricule',
+            ],
+
+            'email' => [
+                'required',
+                'email',
+                'unique:employes,email',
+            ],
+
+            'telephone' => ['nullable', 'string', 'max:20'],
+            'sexe' => ['nullable', 'in:Homme,Femme'],
             'date_naissance' => ['nullable', 'date'],
-            'date_embauche'  => ['nullable', 'date'],
-            'departement_id' => ['nullable', 'exists:departements,id'],
-            'poste_id'       => ['nullable', 'exists:postes,id'],
-            'adresse'        => ['nullable', 'string', 'max:255'],
-            'statut'         => ['required', 'in:actif,inactif'],
+            'date_embauche' => ['required', 'date'],
+
+            'departement_id' => [
+                'required',
+                'uuid',
+                'exists:departements,id',
+            ],
+
+            'poste_id' => [
+                'required',
+                'uuid',
+                Rule::exists('postes', 'id')
+                    ->where(fn ($query) => $query->where(
+                        'departement_id',
+                        $request->input('departement_id')
+                    )),
+            ],
+
+            'adresse' => ['nullable', 'string', 'max:255'],
+            'statut' => ['required', 'in:actif,inactif'],
+        ], [
+            'nom.required' => 'Le nom est obligatoire.',
+            'prenom.required' => 'Le prénom est obligatoire.',
+            'matricule.required' => 'Le matricule est obligatoire.',
+            'matricule.unique' => 'Ce matricule existe déjà.',
+            'email.required' => 'L’adresse e-mail est obligatoire.',
+            'email.email' => 'Veuillez saisir une adresse e-mail valide.',
+            'email.unique' => 'Cette adresse e-mail est déjà utilisée.',
+            'date_embauche.required' => 'La date d’embauche est obligatoire.',
+            'departement_id.required' => 'Veuillez sélectionner un département.',
+            'departement_id.exists' => 'Le département sélectionné est introuvable.',
+            'poste_id.required' => 'Veuillez sélectionner un poste.',
+            'poste_id.exists' => 'Ce poste n’appartient pas au département sélectionné.',
+            'statut.required' => 'Veuillez sélectionner un statut.',
         ]);
+
 
         Employe::create($validated);
 
@@ -135,19 +178,61 @@ class EmployeController extends Controller
         $employe = Employe::findOrFail($id);
 
         $validated = $request->validate([
-            'nom'            => ['required', 'string', 'max:100'],
-            'prenom'         => ['required', 'string', 'max:100'],
-            'matricule'      => ['required', 'string', 'unique:employes,matricule,' . $employe->id],
-            'email'          => ['required', 'email', 'unique:employes,email,' . $employe->id],
-            'telephone'      => ['nullable', 'string', 'max:20'],
-            'sexe'           => ['nullable', 'in:Homme,Femme'],
+            'nom' => ['required', 'string', 'max:100'],
+            'prenom' => ['required', 'string', 'max:100'],
+
+            'matricule' => [
+                'required',
+                'string',
+                'max:30',
+                Rule::unique('employes', 'matricule')->ignore($employe->id),
+            ],
+
+            'email' => [
+                'required',
+                'email',
+                Rule::unique('employes', 'email')->ignore($employe->id),
+            ],
+
+            'telephone' => ['nullable', 'string', 'max:20'],
+            'sexe' => ['nullable', 'in:Homme,Femme'],
             'date_naissance' => ['nullable', 'date'],
-            'date_embauche'  => ['nullable', 'date'],
-            'departement_id' => ['nullable', 'exists:departements,id'],
-            'poste_id'       => ['nullable', 'exists:postes,id'],
-            'adresse'        => ['nullable', 'string', 'max:255'],
-            'statut'         => ['required', 'in:actif,inactif'],
+            'date_embauche' => ['required', 'date'],
+
+            'departement_id' => [
+                'required',
+                'uuid',
+                'exists:departements,id',
+            ],
+
+            'poste_id' => [
+                'required',
+                'uuid',
+                Rule::exists('postes', 'id')
+                    ->where(fn ($query) => $query->where(
+                        'departement_id',
+                        $request->input('departement_id')
+                    )),
+            ],
+
+            'adresse' => ['nullable', 'string', 'max:255'],
+            'statut' => ['required', 'in:actif,inactif'],
+        ], [
+            'nom.required' => 'Le nom est obligatoire.',
+            'prenom.required' => 'Le prénom est obligatoire.',
+            'matricule.required' => 'Le matricule est obligatoire.',
+            'matricule.unique' => 'Ce matricule existe déjà.',
+            'email.required' => 'L’adresse e-mail est obligatoire.',
+            'email.email' => 'Veuillez saisir une adresse e-mail valide.',
+            'email.unique' => 'Cette adresse e-mail est déjà utilisée.',
+            'date_embauche.required' => 'La date d’embauche est obligatoire.',
+            'departement_id.required' => 'Veuillez sélectionner un département.',
+            'departement_id.exists' => 'Le département sélectionné est introuvable.',
+            'poste_id.required' => 'Veuillez sélectionner un poste.',
+            'poste_id.exists' => 'Ce poste n’appartient pas au département sélectionné.',
+            'statut.required' => 'Veuillez sélectionner un statut.',
         ]);
+
 
         $employe->update($validated);
 

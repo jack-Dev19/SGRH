@@ -38,7 +38,6 @@
                                 'Responsable RH'      => 'rh',
                                 'Chef de département' => 'chef',
                                 'Employé'             => 'employe',
-                                'Recruteur'           => 'recruteur',
                             ];
                             $roleKey = $roleMapping[Auth::user()->role->nom ?? ''] ?? null;
                         @endphp

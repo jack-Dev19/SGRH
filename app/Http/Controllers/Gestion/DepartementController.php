@@ -113,23 +113,38 @@ class DepartementController extends Controller
     }
 
     /**
-     * Supprimer un département.
-     * ⚠️ Refusé si des employés y sont rattachés.
+     * Supprimer un département uniquement s'il n'est utilisé
+     * ni par des employés ni par des postes.
      */
     public function destroy(string $id)
     {
-        $departement = Departement::withCount('employes')->findOrFail($id);
-
-        if ($departement->employes_count > 0) {
+        // Récupérer le département et compter ses dépendances.
+        $departement = Departement::withCount([
+            'employes',
+            'postes',
+        ])->findOrFail($id);
+    
+        // Empêcher la suppression si le département est utilisé.
+        if ($departement->employes_count > 0 ||
+            $departement->postes_count > 0) {
+    
             return redirect()
                 ->route('gestion.departements.index')
-                ->with('error', "Impossible de supprimer : {$departement->employes_count} employé(s) sont rattachés à ce département.");
+                ->with(
+                    'error',
+                    'Impossible de supprimer ce département : '
+                    . $departement->employes_count
+                    . ' employé(s) et '
+                    . $departement->postes_count
+                    . ' poste(s) y sont rattachés.'
+                );
         }
-
+    
+        // Supprimer uniquement si aucune dépendance n'existe.
         $departement->delete();
-
+    
         return redirect()
             ->route('gestion.departements.index')
-            ->with('success', 'Département supprimé.');
+            ->with('success', 'Département supprimé avec succès.');
     }
 }

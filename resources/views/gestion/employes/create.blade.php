@@ -77,14 +77,33 @@
                     <p class="text-sm text-purple-400 uppercase tracking-widest">Un nouvel employé</p>
                 </div>
 
+                {{-- Résumé des erreurs de validation --}}
                 @if ($errors->any())
-                    <div class="bg-red-50 border border-red-200 text-red-600 text-xs p-3 rounded-2xl mb-5">
-                        @foreach ($errors->all() as $error) <p>• {{ $error }}</p> @endforeach
+                    <div
+                        class="mb-5 rounded-2xl border border-red-200
+                               bg-red-50 p-4 text-sm text-red-700"
+                        role="alert"
+                        aria-live="assertive"
+                    >
+                        <p class="font-bold mb-2">
+                            Veuillez corriger les erreurs suivantes :
+                        </p>
+                    
+                        <ul class="list-disc pl-5 space-y-1">
+                            @foreach ($errors->all() as $error)
+                                <li>{{ $error }}</li>
+                            @endforeach
+                        </ul>
                     </div>
                 @endif
 
                 <div class="space-y-3">
 
+                    {{-- Label accessible associé au champ --}}
+                    <label for="matricule"
+                        class="block text-xs font-semibold text-purple-700 mb-1 ml-4">
+                        Matricule <span class="text-red-500">*</span>
+                    </label>
                     {{-- Matricule --}}
                     <div class="relative">
                         <div class="absolute left-4 top-1/2 -translate-y-1/2 text-purple-600 pointer-events-none">
@@ -94,6 +113,11 @@
                             value="{{ old('matricule', 'EMP-' . str_pad(\App\Models\Employe::count() + 1, 3, '0', STR_PAD_LEFT)) }}"
                             placeholder="Matricule"
                             class="w-full pl-12 pr-4 py-3.5 rounded-full bg-purple-100/70 text-sm text-slate-700 placeholder-slate-500 focus:outline-none focus:ring-4 focus:ring-purple-300/40 focus:bg-white transition">
+                            @error('matricule')
+                                <p class="mt-1 ml-4 text-xs text-red-600" role="alert">
+                                    {{ $message }}
+                                </p>
+                            @enderror
                     </div>
 
                     {{-- Prénom + Nom --}}
@@ -104,6 +128,11 @@
                             </div>
                             <input type="text" name="prenom" required value="{{ old('prenom') }}" placeholder="Prénom"
                                 class="w-full pl-12 pr-4 py-3.5 rounded-full bg-purple-100/70 text-sm text-slate-700 placeholder-slate-500 focus:outline-none focus:ring-4 focus:ring-purple-300/40 focus:bg-white transition">
+                            @error('prenom')
+                                <p class="mt-1 ml-4 text-xs text-red-600" role="alert">
+                                    {{ $message }}
+                                </p>
+                            @enderror
                         </div>
                         <div class="relative">
                             <div class="absolute left-4 top-1/2 -translate-y-1/2 text-purple-600 pointer-events-none">
@@ -111,6 +140,11 @@
                             </div>
                             <input type="text" name="nom" required value="{{ old('nom') }}" placeholder="Nom"
                                 class="w-full pl-12 pr-4 py-3.5 rounded-full bg-purple-100/70 text-sm text-slate-700 placeholder-slate-500 focus:outline-none focus:ring-4 focus:ring-purple-300/40 focus:bg-white transition">
+                            @error('nom')
+                                <p class="mt-1 ml-4 text-xs text-red-600" role="alert">
+                                    {{ $message }}
+                                </p>
+                            @enderror
                         </div>
                     </div>
 
@@ -147,6 +181,11 @@
                                 Femme
                             </button>
                         </div>
+                        @error('sexe')
+                            <p class="mt-1 ml-4 text-xs text-red-600" role="alert">
+                                {{ $message }}
+                            </p>
+                        @enderror
                     </div>
 
                     {{-- Email --}}
@@ -156,6 +195,11 @@
                         </div>
                         <input type="email" name="email" required value="{{ old('email') }}" placeholder="Email"
                             class="w-full pl-12 pr-4 py-3.5 rounded-full bg-purple-100/70 text-sm text-slate-700 placeholder-slate-500 focus:outline-none focus:ring-4 focus:ring-purple-300/40 focus:bg-white transition">
+                        @error('email')
+                            <p class="mt-1 ml-4 text-xs text-red-600" role="alert">
+                                {{ $message }}
+                            </p>
+                        @enderror
                     </div>
 
                     {{-- Téléphone --}}
@@ -165,6 +209,11 @@
                         </div>
                         <input type="text" name="telephone" value="{{ old('telephone') }}" placeholder="Téléphone"
                             class="w-full pl-12 pr-4 py-3.5 rounded-full bg-purple-100/70 text-sm text-slate-700 placeholder-slate-500 focus:outline-none focus:ring-4 focus:ring-purple-300/40 focus:bg-white transition">
+                        @error('telephone')
+                            <p class="mt-1 ml-4 text-xs text-red-600" role="alert">
+                                {{ $message }}
+                            </p>
+                        @enderror
                     </div>
 
                     {{-- DÉPARTEMENT --}}
@@ -194,6 +243,11 @@
                                 </button>
                             @endforeach
                         </div>
+                        @error('departement_id')
+                            <p class="mt-1 ml-4 text-xs text-red-600" role="alert">
+                                {{ $message }}
+                            </p>
+                        @enderror
                     </div>
 
                     {{-- POSTE --}}
@@ -223,6 +277,11 @@
                                 </button>
                             @endforeach
                         </div>
+                        @error('poste_id')
+                            <p class="mt-1 ml-4 text-xs text-red-600" role="alert">
+                                {{ $message }}
+                            </p>
+                        @enderror
                     </div>
 
                     {{-- Adresse + Dates --}}
@@ -232,6 +291,11 @@
                         </div>
                         <input type="text" name="adresse" value="{{ old('adresse') }}" placeholder="Adresse"
                             class="w-full pl-12 pr-4 py-3.5 rounded-full bg-purple-100/70 text-sm text-slate-700 placeholder-slate-500 focus:outline-none focus:ring-4 focus:ring-purple-300/40 focus:bg-white transition">
+                        @error('adresse')
+                            <p class="mt-1 ml-4 text-xs text-red-600" role="alert">
+                                {{ $message }}
+                            </p>
+                        @enderror
                     </div>
 
                     {{-- Date naissance + Date embauche --}}
@@ -243,6 +307,11 @@
                             <input type="date" name="date_naissance" value="{{ old('date_naissance') }}"
                                 placeholder="Naissance"
                                 class="w-full pl-12 pr-4 py-3.5 rounded-full bg-purple-100/70 text-sm text-slate-700 focus:outline-none focus:ring-4 focus:ring-purple-300/40 focus:bg-white transition">
+                            @error('date_naissance')
+                                <p class="mt-1 ml-2 text-xs text-red-600" role="alert">
+                                    {{ $message }}
+                                </p>
+                            @enderror
                         </div>
                         <div class="relative">
                             <div class="absolute left-4 top-1/2 -translate-y-1/2 text-purple-600 pointer-events-none">
@@ -250,6 +319,11 @@
                             </div>
                             <input type="date" name="date_embauche" value="{{ old('date_embauche', now()->format('Y-m-d')) }}"
                                 class="w-full pl-12 pr-4 py-3.5 rounded-full bg-purple-100/70 text-sm text-slate-700 focus:outline-none focus:ring-4 focus:ring-purple-300/40 focus:bg-white transition">
+                            @error('date_embauche')
+                                <p class="mt-1 ml-2 text-xs text-red-600" role="alert">
+                                    {{ $message }}
+                                </p>
+                            @enderror
                         </div>
                     </div>
 
@@ -278,6 +352,11 @@
                                 Inactif
                             </button>
                         </div>
+                        @error('statut')
+                            <p class="mt-1 ml-4 text-xs text-red-600" role="alert">
+                                {{ $message }}
+                            </p>
+                        @enderror
                     </div>
 
                 </div>

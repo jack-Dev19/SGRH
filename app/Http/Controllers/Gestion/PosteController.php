@@ -60,7 +60,7 @@ class PosteController extends Controller
     {
         $validated = $request->validate([
             'nom'            => ['required', 'string', 'max:100'],
-            'departement_id' => ['nullable', 'exists:departements,id'],
+            'departement_id' => ['required', 'exists:departements,id'],
             'description'    => ['nullable', 'string', 'max:255'],
             'niveau'         => ['nullable', 'string', 'max:50'],
             'salaire_min'    => ['nullable', 'numeric', 'min:0'],

@@ -56,99 +56,195 @@
                     <div class="bg-red-50 border border-red-200 text-red-600 text-xs p-3 rounded-2xl mb-5">
                         @foreach ($errors->all() as $error) <p>• {{ $error }}</p> @endforeach
                     </div>
-                @endif
-
-                <div class="space-y-3">
-
-                    {{-- Nom --}}
-                    <div class="relative">
-                        <div class="absolute left-4 top-1/2 -translate-y-1/2 text-blue-600 pointer-events-none">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/></svg>
-                        </div>
-                        <input type="text" name="nom" required value="{{ old('nom', $poste->nom) }}" placeholder="Nom du poste"
-                            class="w-full pl-12 pr-4 py-3.5 rounded-full bg-blue-100/70 text-sm text-slate-700 placeholder-slate-500 focus:outline-none focus:ring-4 focus:ring-blue-300/40 focus:bg-white transition">
+                @endif            
+                <div class="space-y-4">
+                
+                    {{-- Nom du poste --}}
+                    <div>
+                        <label for="nom" class="block text-sm font-semibold text-slate-700 mb-2">
+                            Nom du poste <span class="text-red-500">*</span>
+                        </label>
+                    
+                        <input
+                            type="text"
+                            id="nom"
+                            name="nom"
+                            required
+                            maxlength="100"
+                            value="{{ old('nom', $poste->nom) }}"
+                            placeholder="Ex. : Développeur web"
+                            class="w-full px-4 py-3.5 rounded-full bg-blue-100/70 text-sm text-slate-700 focus:outline-none focus:ring-4 focus:ring-blue-300/40 focus:bg-white transition"
+                        >
+                    
+                        @error('nom')
+                            <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
+                        @enderror
                     </div>
-
+                
                     {{-- Département --}}
-                    <div class="relative">
-                        <div class="absolute left-4 top-1/2 -translate-y-1/2 text-blue-600 pointer-events-none">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
-                        </div>
-                        <select name="departement_id"
-                            class="w-full pl-12 pr-4 py-3.5 rounded-full bg-blue-100/70 text-sm text-slate-700 focus:outline-none focus:ring-4 focus:ring-blue-300/40 focus:bg-white transition appearance-none">
-                            <option value="">— Aucun département —</option>
-                            @foreach($departements as $dept)
-                                <option value="{{ $dept->id }}" {{ old('departement_id', $poste->departement_id) === $dept->id ? 'selected' : '' }}>
+                    <div>
+                        <label for="departement_id" class="block text-sm font-semibold text-slate-700 mb-2">
+                            Département <span class="text-red-500">*</span>
+                        </label>
+                    
+                        <select
+                            id="departement_id"
+                            name="departement_id"
+                            required
+                            class="w-full px-4 py-3.5 rounded-full bg-blue-100/70 text-sm text-slate-700 focus:outline-none focus:ring-4 focus:ring-blue-300/40 focus:bg-white transition"
+                        >
+                            <option value="">— Sélectionner un département —</option>
+                    
+                            @foreach ($departements as $dept)
+                                <option value="{{ $dept->id }}" @selected(old('departement_id', $poste->departement_id) == $dept->id)>
                                     {{ $dept->nom }}
                                 </option>
                             @endforeach
                         </select>
+                    
+                        @error('departement_id')
+                            <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
+                        @enderror
                     </div>
-
+                
                     {{-- Niveau --}}
-                    <div class="relative">
-                        <div class="absolute left-4 top-1/2 -translate-y-1/2 text-blue-600 pointer-events-none">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
-                        </div>
-                        <input type="text" name="niveau" value="{{ old('niveau', $poste->niveau) }}" placeholder="Niveau"
-                            class="w-full pl-12 pr-4 py-3.5 rounded-full bg-blue-100/70 text-sm text-slate-700 placeholder-slate-500 focus:outline-none focus:ring-4 focus:ring-blue-300/40 focus:bg-white transition">
+                    <div>
+                        <label for="niveau" class="block text-sm font-semibold text-slate-700 mb-2">
+                            Niveau du poste
+                        </label>
+                    
+                        <input
+                            type="text"
+                            id="niveau"
+                            name="niveau"
+                            maxlength="30"
+                            value="{{ old('niveau', $poste->niveau) }}"
+                            placeholder="Ex. : Junior, Confirmé, Senior"
+                            class="w-full px-4 py-3.5 rounded-full bg-blue-100/70 text-sm text-slate-700 focus:outline-none focus:ring-4 focus:ring-blue-300/40 focus:bg-white transition"
+                        >
+                    
+                        @error('niveau')
+                            <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
+                        @enderror
                     </div>
-
-                    {{-- Salaires min/max --}}
-                    <div class="grid grid-cols-2 gap-3">
-                        <div class="relative">
-                            <div class="absolute left-4 top-1/2 -translate-y-1/2 text-blue-600 pointer-events-none">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                
+                    {{-- Salaires --}}
+                    <div>
+                        <p class="text-sm font-semibold text-slate-700 mb-2">Fourchette salariale</p>
+                    
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div>
+                                <label for="salaire_min" class="block text-sm text-slate-600 mb-2">
+                                    Salaire minimum (Ar)
+                                </label>
+                            
+                                <input
+                                    type="number"
+                                    id="salaire_min"
+                                    name="salaire_min"
+                                    min="0"
+                                    step="1000"
+                                    value="{{ old('salaire_min', $poste->salaire_min) }}"
+                                    placeholder="Ex. : 500000"
+                                    class="w-full px-4 py-3.5 rounded-full bg-blue-100/70 text-sm text-slate-700 focus:outline-none focus:ring-4 focus:ring-blue-300/40 focus:bg-white transition"
+                                >
+                            
+                                @error('salaire_min')
+                                    <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
+                                @enderror
                             </div>
-                            <input type="number" name="salaire_min" min="0" step="1000" value="{{ old('salaire_min', $poste->salaire_min) }}" placeholder="Salaire min"
-                                class="w-full pl-12 pr-4 py-3.5 rounded-full bg-blue-100/70 text-sm text-slate-700 placeholder-slate-500 focus:outline-none focus:ring-4 focus:ring-blue-300/40 focus:bg-white transition">
-                        </div>
-                        <div class="relative">
-                            <div class="absolute left-4 top-1/2 -translate-y-1/2 text-blue-600 pointer-events-none">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                        
+                            <div>
+                                <label for="salaire_max" class="block text-sm text-slate-600 mb-2">
+                                    Salaire maximum (Ar)
+                                </label>
+                            
+                                <input
+                                    type="number"
+                                    id="salaire_max"
+                                    name="salaire_max"
+                                    min="0"
+                                    step="1000"
+                                    value="{{ old('salaire_max', $poste->salaire_max) }}"
+                                    placeholder="Ex. : 1200000"
+                                    class="w-full px-4 py-3.5 rounded-full bg-blue-100/70 text-sm text-slate-700 focus:outline-none focus:ring-4 focus:ring-blue-300/40 focus:bg-white transition"
+                                >
+                            
+                                @error('salaire_max')
+                                    <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
+                                @enderror
                             </div>
-                            <input type="number" name="salaire_max" min="0" step="1000" value="{{ old('salaire_max', $poste->salaire_max) }}" placeholder="Salaire max"
-                                class="w-full pl-12 pr-4 py-3.5 rounded-full bg-blue-100/70 text-sm text-slate-700 placeholder-slate-500 focus:outline-none focus:ring-4 focus:ring-blue-300/40 focus:bg-white transition">
                         </div>
                     </div>
-
+                
                     {{-- Description --}}
-                    <div class="relative">
-                        <div class="absolute left-4 top-3.5 text-blue-600 pointer-events-none">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h7"/></svg>
-                        </div>
-                        <textarea name="description" rows="3" placeholder="Description..."
-                            class="w-full pl-12 pr-4 py-3.5 rounded-2xl bg-blue-100/70 text-sm text-slate-700 placeholder-slate-500 focus:outline-none focus:ring-4 focus:ring-blue-300/40 focus:bg-white transition resize-none">{{ old('description', $poste->description) }}</textarea>
+                    <div>
+                        <label for="description" class="block text-sm font-semibold text-slate-700 mb-2">
+                            Description du poste
+                        </label>
+                    
+                        <textarea
+                            id="description"
+                            name="description"
+                            rows="3"
+                            placeholder="Décrivez les missions et responsabilités..."
+                            class="w-full px-4 py-3.5 rounded-2xl bg-blue-100/70 text-sm text-slate-700 focus:outline-none focus:ring-4 focus:ring-blue-300/40 focus:bg-white transition resize-y"
+                        >{{ old('description', $poste->description) }}</textarea>
+                    
+                        @error('description')
+                            <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
+                        @enderror
                     </div>
-
+                
                     {{-- Statut --}}
-                    <div class="relative" data-dropdown="statut">
-                        <input type="hidden" name="statut" id="input-statut" value="{{ old('statut', $poste->statut) }}">
-                        <button type="button" id="dropdown-statut-btn"
-                            class="w-full inline-flex items-center justify-between gap-2 pl-12 pr-10 py-3.5 rounded-full bg-blue-100/70 text-sm text-slate-700 font-medium focus:outline-none focus:ring-4 focus:ring-blue-300/40 focus:bg-white transition">
-                            <div class="absolute left-4 top-1/2 -translate-y-1/2 text-blue-600 pointer-events-none">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    <div>
+                        <span id="statut-label" class="block text-sm font-semibold text-slate-700 mb-2">
+                            Statut <span class="text-red-500">*</span>
+                        </span>
+                    
+                        <div class="relative" data-dropdown="statut">
+                            <input
+                                type="hidden"
+                                name="statut"
+                                id="input-statut"
+                                value="{{ old('statut', $poste->statut) }}"
+                            >
+                        
+                            <button
+                                type="button"
+                                id="dropdown-statut-btn"
+                                aria-labelledby="statut-label dropdown-statut-label"
+                                aria-haspopup="listbox"
+                                aria-expanded="false"
+                                class="w-full inline-flex items-center justify-between gap-2 px-4 py-3.5 rounded-full bg-blue-100/70 text-sm text-slate-700 font-medium focus:outline-none focus:ring-4 focus:ring-blue-300/40 focus:bg-white transition"
+                            >
+                                <span id="dropdown-statut-label" class="truncate text-left">
+                                    {{ old('statut', $poste->statut) === 'inactif' ? 'Inactif' : 'Actif' }}
+                                </span>
+                            
+                                <svg id="dropdown-statut-chevron" xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-blue-600 transition-transform duration-300 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/>
+                                </svg>
+                            </button>
+                        
+                            <div id="dropdown-statut-menu" class="hidden absolute top-full left-0 right-0 mt-2 bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden z-50">
+                                <button type="button" onclick="selectDropdown('statut', 'actif', 'Actif')" class="w-full text-left px-4 py-3 text-sm text-slate-700 hover:bg-emerald-50 transition">
+                                    Actif
+                                </button>
+                            
+                                <button type="button" onclick="selectDropdown('statut', 'inactif', 'Inactif')" class="w-full text-left px-4 py-3 text-sm text-slate-700 hover:bg-slate-50 transition border-t border-slate-100">
+                                    Inactif
+                                </button>
                             </div>
-                            <span id="dropdown-statut-label" class="truncate text-left">
-                                {{ old('statut', $poste->statut) === 'inactif' ? 'Inactif' : 'Actif' }}
-                            </span>
-                            <svg id="dropdown-statut-chevron" xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-blue-600 transition-transform duration-300 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/></svg>
-                        </button>
-                        <div id="dropdown-statut-menu" class="hidden absolute top-full left-0 right-0 mt-2 bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden z-50">
-                            <button type="button" onclick="selectDropdown('statut', 'actif', 'Actif')"
-                                class="w-full text-left px-4 py-3 text-sm text-slate-700 hover:bg-emerald-50 hover:text-emerald-700 transition flex items-center gap-3">
-                                <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
-                                Actif
-                            </button>
-                            <button type="button" onclick="selectDropdown('statut', 'inactif', 'Inactif')"
-                                class="w-full text-left px-4 py-3 text-sm text-slate-700 hover:bg-slate-50 transition border-t border-slate-100 flex items-center gap-3">
-                                <span class="w-2.5 h-2.5 rounded-full bg-slate-400"></span>
-                                Inactif
-                            </button>
                         </div>
+                    
+                        @error('statut')
+                            <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
+                        @enderror
                     </div>
-
+                
                 </div>
+
 
                 <button type="submit"
                     class="w-full mt-6 py-3.5 rounded-full bg-gradient-to-r from-blue-600 to-purple-600 text-white text-sm font-bold uppercase tracking-wider hover:from-blue-700 hover:to-purple-700 focus:outline-none focus:ring-4 focus:ring-blue-300/50 transition shadow-lg shadow-blue-500/30 transform hover:-translate-y-0.5">

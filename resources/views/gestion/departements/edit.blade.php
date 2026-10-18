@@ -59,70 +59,123 @@
                     </div>
                 @endif
 
-                <div class="space-y-3">
-
+                
+                <div class="space-y-4">
+                
                     {{-- Nom --}}
-                    <div class="relative">
-                        <div class="absolute left-4 top-1/2 -translate-y-1/2 text-blue-600 pointer-events-none">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/></svg>
-                        </div>
-                        <input type="text" name="nom" required value="{{ old('nom', $departement->nom) }}" placeholder="Nom du département"
-                            class="w-full pl-12 pr-4 py-3.5 rounded-full bg-blue-100/70 text-sm text-slate-700 placeholder-slate-500 focus:outline-none focus:ring-4 focus:ring-blue-300/40 focus:bg-white transition">
+                    <div>
+                        <label for="nom" class="block text-sm font-semibold text-slate-700 mb-2">
+                            Nom du département <span class="text-red-500">*</span>
+                        </label>
+                    
+                        <input
+                            type="text"
+                            id="nom"
+                            name="nom"
+                            required
+                            maxlength="100"
+                            value="{{ old('nom', $departement->nom) }}"
+                            placeholder="Ex. : Ressources humaines"
+                            class="w-full px-4 py-3.5 rounded-full bg-blue-100/70 text-sm text-slate-700 focus:outline-none focus:ring-4 focus:ring-blue-300/40 focus:bg-white transition"
+                        >
+                    
+                        @error('nom')
+                            <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
+                        @enderror
                     </div>
-
+                
                     {{-- Description --}}
-                    <div class="relative">
-                        <div class="absolute left-4 top-3.5 text-blue-600 pointer-events-none">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h7"/></svg>
-                        </div>
-                        <textarea name="description" rows="3" placeholder="Description..."
-                            class="w-full pl-12 pr-4 py-3.5 rounded-2xl bg-blue-100/70 text-sm text-slate-700 placeholder-slate-500 focus:outline-none focus:ring-4 focus:ring-blue-300/40 focus:bg-white transition resize-none">{{ old('description', $departement->description) }}</textarea>
+                    <div>
+                        <label for="description" class="block text-sm font-semibold text-slate-700 mb-2">
+                            Description du département
+                        </label>
+                    
+                        <textarea
+                            id="description"
+                            name="description"
+                            rows="3"
+                            placeholder="Décrivez les missions du département..."
+                            class="w-full px-4 py-3.5 rounded-2xl bg-blue-100/70 text-sm text-slate-700 focus:outline-none focus:ring-4 focus:ring-blue-300/40 focus:bg-white transition resize-y"
+                        >{{ old('description', $departement->description) }}</textarea>
+                    
+                        @error('description')
+                            <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
+                        @enderror
                     </div>
-
+                
                     {{-- Responsable --}}
-                    <div class="relative">
-                        <div class="absolute left-4 top-1/2 -translate-y-1/2 text-blue-600 pointer-events-none">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
-                        </div>
-                        <select name="responsable_id"
-                            class="w-full pl-12 pr-4 py-3.5 rounded-full bg-blue-100/70 text-sm text-slate-700 focus:outline-none focus:ring-4 focus:ring-blue-300/40 focus:bg-white transition appearance-none">
+                    <div>
+                        <label for="responsable_id" class="block text-sm font-semibold text-slate-700 mb-2">
+                            Responsable du département
+                        </label>
+                    
+                        <select
+                            id="responsable_id"
+                            name="responsable_id"
+                            class="w-full px-4 py-3.5 rounded-full bg-blue-100/70 text-sm text-slate-700 focus:outline-none focus:ring-4 focus:ring-blue-300/40 focus:bg-white transition"
+                        >
                             <option value="">— Aucun responsable —</option>
-                            @foreach($employes as $emp)
-                                <option value="{{ $emp->id }}" {{ old('responsable_id', $departement->responsable_id) === $emp->id ? 'selected' : '' }}>
-                                    {{ $emp->nom_complet }} ({{ $emp->matricule }})
+                    
+                            @foreach ($employes as $emp)
+                                <option value="{{ $emp->id }}" @selected(old('responsable_id', $departement->responsable_id) == $emp->id)>
+                                    {{ $emp->nom }} {{ $emp->prenom }} ({{ $emp->matricule }})
                                 </option>
                             @endforeach
                         </select>
+                    
+                        @error('responsable_id')
+                            <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
+                        @enderror
                     </div>
-
+                
                     {{-- Statut --}}
-                    <div class="relative" data-dropdown="statut">
-                        <input type="hidden" name="statut" id="input-statut" value="{{ old('statut', $departement->statut) }}">
-                        <button type="button" id="dropdown-statut-btn"
-                            class="w-full inline-flex items-center justify-between gap-2 pl-12 pr-10 py-3.5 rounded-full bg-blue-100/70 text-sm text-slate-700 font-medium focus:outline-none focus:ring-4 focus:ring-blue-300/40 focus:bg-white transition">
-                            <div class="absolute left-4 top-1/2 -translate-y-1/2 text-blue-600 pointer-events-none">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    <div>
+                        <span id="statut-label" class="block text-sm font-semibold text-slate-700 mb-2">
+                            Statut <span class="text-red-500">*</span>
+                        </span>
+                    
+                        <div class="relative" data-dropdown="statut">
+                            <input
+                                type="hidden"
+                                name="statut"
+                                id="input-statut"
+                                value="{{ old('statut', $departement->statut) }}"
+                            >
+                        
+                            <button
+                                type="button"
+                                id="dropdown-statut-btn"
+                                aria-labelledby="statut-label dropdown-statut-label"
+                                aria-expanded="false"
+                                class="w-full inline-flex items-center justify-between gap-2 px-4 py-3.5 rounded-full bg-blue-100/70 text-sm text-slate-700 font-medium focus:outline-none focus:ring-4 focus:ring-blue-300/40 focus:bg-white transition"
+                            >
+                                <span id="dropdown-statut-label" class="truncate text-left">
+                                    {{ old('statut', $departement->statut) === 'inactif' ? 'Inactif' : 'Actif' }}
+                                </span>
+                            
+                                <svg id="dropdown-statut-chevron" xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-blue-600 transition-transform duration-300 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/>
+                                </svg>
+                            </button>
+                        
+                            <div id="dropdown-statut-menu" class="hidden absolute top-full left-0 right-0 mt-2 bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden z-50">
+                                <button type="button" onclick="selectDropdown('statut', 'actif', 'Actif')" class="w-full text-left px-4 py-3 text-sm text-slate-700 hover:bg-emerald-50 transition">
+                                    Actif
+                                </button>
+                            
+                                <button type="button" onclick="selectDropdown('statut', 'inactif', 'Inactif')" class="w-full text-left px-4 py-3 text-sm text-slate-700 hover:bg-slate-50 transition border-t border-slate-100">
+                                    Inactif
+                                </button>
                             </div>
-                            <span id="dropdown-statut-label" class="truncate text-left">
-                                {{ old('statut', $departement->statut) === 'inactif' ? 'Inactif' : 'Actif' }}
-                            </span>
-                            <svg id="dropdown-statut-chevron" xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-blue-600 transition-transform duration-300 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/></svg>
-                        </button>
-                        <div id="dropdown-statut-menu" class="hidden absolute top-full left-0 right-0 mt-2 bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden z-50">
-                            <button type="button" onclick="selectDropdown('statut', 'actif', 'Actif')"
-                                class="w-full text-left px-4 py-3 text-sm text-slate-700 hover:bg-emerald-50 hover:text-emerald-700 transition flex items-center gap-3">
-                                <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
-                                Actif
-                            </button>
-                            <button type="button" onclick="selectDropdown('statut', 'inactif', 'Inactif')"
-                                class="w-full text-left px-4 py-3 text-sm text-slate-700 hover:bg-slate-50 transition border-t border-slate-100 flex items-center gap-3">
-                                <span class="w-2.5 h-2.5 rounded-full bg-slate-400"></span>
-                                Inactif
-                            </button>
                         </div>
+                    
+                        @error('statut')
+                            <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
+                        @enderror
                     </div>
-
+                
                 </div>
+
 
                 <button type="submit"
                     class="w-full mt-6 py-3.5 rounded-full bg-gradient-to-r from-blue-600 to-purple-600 text-white text-sm font-bold uppercase tracking-wider hover:from-blue-700 hover:to-purple-700 focus:outline-none focus:ring-4 focus:ring-blue-300/50 transition shadow-lg shadow-blue-500/30 transform hover:-translate-y-0.5">

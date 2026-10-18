@@ -56,21 +56,32 @@ Route::middleware('auth')->group(function () {
     // --------------------------------------------------------------
     // Redirection intelligente après login
     // --------------------------------------------------------------
+    // Redirection vers le tableau de bord selon le rôle connecté.
     Route::get('/dashboard', function () {
+        $user = auth()->user();
+
+        // Un compte sans rôle ne doit pas accéder à un espace métier.
+        if (!$user || !$user->role) {
+            abort(403, 'Aucun rôle valide n’est associé à votre compte.');
+        }
+
         $roleMapping = [
             'Administrateur'      => 'admin.dashboard',
             'Responsable RH'      => 'rh.dashboard',
             'Chef de département' => 'chef.dashboard',
             'Employé'             => 'employe.dashboard',
-            'Recruteur'           => 'recruteur.dashboard',
         ];
 
-        $target = $roleMapping[auth()->user()->role->nom ?? ''] ?? null;
+        $route = $roleMapping[$user->role->nom] ?? null;
 
-        return $target
-            ? redirect()->route($target)
-            : 'Aucun rôle assigné à votre compte.';
+        // Bloquer les rôles inconnus au lieu d'afficher un simple texte.
+        if (!$route) {
+            abort(403, 'Votre rôle ne possède aucun tableau de bord autorisé.');
+        }
+
+        return redirect()->route($route);
     })->name('dashboard');
+
 
     // ==============================================================
     // ADMIN — Dashboard
@@ -151,14 +162,6 @@ Route::middleware('auth')->group(function () {
             Route::get('/presences', [EmployeePresenceController::class, 'index'])
                 ->name('presences.index');
         });
-
-    // ==============================================================
-    // RECRUTEUR
-    // ==============================================================
-    Route::middleware('role:Recruteur')->group(function () {
-        Route::view('/recruteur/dashboard', 'recruteur.dashboard')
-            ->name('recruteur.dashboard');
-    });
 
     // ==============================================================
     // GESTION — PARTAGÉ Admin + RH
