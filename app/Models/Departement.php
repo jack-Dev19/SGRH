@@ -8,9 +8,6 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-/**
- * Modèle Departement — table `departements` (UUID)
- */
 class Departement extends Model
 {
     use HasFactory, HasUuids;
@@ -18,13 +15,16 @@ class Departement extends Model
     protected $table = 'departements';
 
     protected $fillable = [
-        'nom', 'description', 'statut', 'responsable_id',
+        'nom',
+        'description',
+        'responsable_id',
+        'statut',
     ];
 
     protected function casts(): array
     {
         return [
-            'responsable_id' => 'string',
+            'statut' => 'boolean',
         ];
     }
 
@@ -32,18 +32,27 @@ class Departement extends Model
     // RELATIONS
     // =================================================================
 
-    public function postes(): HasMany
+    public function responsable(): BelongsTo
     {
-        return $this->hasMany(Poste::class);
+        return $this->belongsTo(User::class, 'responsable_id');
     }
 
     public function employes(): HasMany
     {
-        return $this->hasMany(Employe::class);
+        return $this->hasMany(Employe::class, 'departement_id');
     }
 
-    public function responsable(): BelongsTo
+    public function postes(): HasMany
     {
-        return $this->belongsTo(Employe::class, 'responsable_id');
+        return $this->hasMany(Poste::class, 'departement_id');
+    }
+
+    /**
+     * ⭐ Postes actifs uniquement.
+     */
+    public function postesActifs(): HasMany
+    {
+        return $this->hasMany(Poste::class, 'departement_id')
+            ->where('statut', 1);
     }
 }

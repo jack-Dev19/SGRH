@@ -6,23 +6,24 @@ use App\Http\Controllers\Controller;
 use App\Models\DemandeConge;
 use App\Models\Employe;
 use App\Models\Presence;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\View\View;
 
-/**
- * DashboardController (Chef)
- * --------------------------
- * Tableau de bord du chef de département.
- * Le chef ne voit QUE son département.
- */
 class DashboardController extends Controller
 {
     /**
-     * Récupère l'employé connecté + son département.
+     * Récupérer l'employé connecté et son département.
      */
     private function getChefContext(): array
     {
-        $employe = Employe::where('user_id', Auth::id())
+        $user = Auth::user();
+
+        if (!$user) {
+            return [null, null];
+        }
+
+        $employe = Employe::where('matricule', $user->matricule)
             ->with('departement')
             ->first();
 
@@ -31,40 +32,98 @@ class DashboardController extends Controller
         return [$employe, $departement];
     }
 
+    /**
+     * Afficher le tableau de bord du chef.
+     */
     public function index(): View
     {
         [$employe, $departement] = $this->getChefContext();
 
+        // Si aucun département n'est associé au chef.
         if (!$departement) {
-            return view('chef.dashboard', ['departement' => null]);
+            return view('chef.dashboard', [
+                'employe' => $employe,
+                'departement' => null,
+                'stats' => [
+                    'equipe' => 0,
+                    'presents_today' => 0,
+                    'absents_today' => 0,
+                    'conges_a_valider' => 0,
+                    'taux_presence' => 0,
+                ],
+                'congesEnAttente' => collect(),
+                'presencesJour' => collect(),
+            ]);
         }
 
-        $employeIds = Employe::where('departement_id', $departement->id)->pluck('id');
-        $today      = now()->toDateString();
+        // Récupérer les employés du département.
+        $employeIds = Employe::where(
+            'departement_id',
+            $departement->id
+        )->pluck('id');
 
-        // Stats
-        $stats = [
-            'equipe'           => $employeIds->count(),
-            'presents_today'   => Presence::whereIn('employe_id', $employeIds)
-                ->whereDate('date', $today)
-                ->where('statut', 'present')
-                ->count(),
-            'absents_today'    => Presence::whereIn('employe_id', $employeIds)
-                ->whereDate('date', $today)
-                ->where('statut', 'absent')
-                ->count(),
-            'conges_a_valider' => DemandeConge::whereIn('employe_id', $employeIds)
-                ->where('statut', 'en_attente')
-                ->count(),
-        ];
+        // Dates utilisées pour les recherches.
+        $today = Carbon::today()->toDateString();
 
-        // Taux de présence (mois en cours)
-        $totalPresencesMois = Presence::whereIn('employe_id', $employeIds)
-            ->whereMonth('date', now()->month)
+        $debutMois = Carbon::now()
+            ->startOfMonth()
+            ->toDateString();
+
+        $finMois = Carbon::now()
+            ->endOfMonth()
+            ->toDateString();
+
+        // ==========================================
+        // STATISTIQUES DU JOUR
+        // ==========================================
+
+        $presentsToday = Presence::whereIn(
+            'employe_id',
+            $employeIds
+        )
+            ->where('date', $today)
+            ->where('statut', 'present')
             ->count();
 
-        $presencesOK = Presence::whereIn('employe_id', $employeIds)
-            ->whereMonth('date', now()->month)
+        $absentsToday = Presence::whereIn(
+            'employe_id',
+            $employeIds
+        )
+            ->where('date', $today)
+            ->where('statut', 'absent')
+            ->count();
+
+        $congesAValider = DemandeConge::whereIn(
+            'employe_id',
+            $employeIds
+        )
+            ->where('statut', 'en_attente')
+            ->count();
+
+        $stats = [
+            'equipe' => $employeIds->count(),
+            'presents_today' => $presentsToday,
+            'absents_today' => $absentsToday,
+            'conges_a_valider' => $congesAValider,
+            'taux_presence' => 0,
+        ];
+
+        // ==========================================
+        // TAUX DE PRÉSENCE DU MOIS
+        // ==========================================
+
+        $totalPresencesMois = Presence::whereIn(
+            'employe_id',
+            $employeIds
+        )
+            ->whereBetween('date', [$debutMois, $finMois])
+            ->count();
+
+        $presencesOK = Presence::whereIn(
+            'employe_id',
+            $employeIds
+        )
+            ->whereBetween('date', [$debutMois, $finMois])
             ->where('statut', 'present')
             ->count();
 
@@ -72,21 +131,31 @@ class DashboardController extends Controller
             ? round(($presencesOK / $totalPresencesMois) * 100)
             : 0;
 
-        // Congés en attente (5 plus récents)
-        $congesEnAttente = DemandeConge::with(['employe', 'typeConge'])
+        // ==========================================
+        // CONGÉS EN ATTENTE
+        // ==========================================
+
+        $congesEnAttente = DemandeConge::with([
+            'employe',
+            'typeConge',
+        ])
             ->whereIn('employe_id', $employeIds)
             ->where('statut', 'en_attente')
             ->orderByDesc('created_at')
             ->take(5)
             ->get();
 
-        // Présences du jour
+        // ==========================================
+        // PRÉSENCES DU JOUR
+        // ==========================================
+
         $presencesJour = Presence::with('employe')
             ->whereIn('employe_id', $employeIds)
-            ->whereDate('date', $today)
+            ->where('date', $today)
             ->orderByDesc('created_at')
             ->get();
 
+        // Afficher le dashboard.
         return view('chef.dashboard', compact(
             'employe',
             'departement',

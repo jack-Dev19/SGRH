@@ -11,36 +11,55 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class Poste extends Model
 {
     use HasFactory, HasUuids;
-    protected $table = 'postes';
-    protected $fillable = ['departement_id','nom','description','niveau','salaire_min',
-    'salaire_max','statut',];
 
-    protected function casts(): array 
-    { 
-        return [ 
-            'salaire_min' => 'decimal:2', 
-            'salaire_max' => 'decimal:2', 
-        ]; 
-    } 
-    /** 
-     * Le département auquel appartient le poste. 
-     */ 
-    public function departement(): BelongsTo 
-    { 
-        return $this->belongsTo(Departement::class); 
-    } 
-     /** 
-     * Les employés occupant ce poste. 
-     */ 
-    public function employes(): HasMany 
-    { 
-        return $this->hasMany(Employe::class); 
+    protected $table = 'postes';
+
+    protected $fillable = [
+        'nom',
+        'description',
+        'departement_id',
+        'salaire_base',
+        'statut',
+    ];
+
+    protected function casts(): array
+    {
+        return [
+            'salaire_base' => 'decimal:2',
+            'statut'       => 'boolean',
+        ];
     }
-    /** 
-     * Les offres d'emploi associées à ce poste. 
-     */ 
-    public function offresEmploi(): HasMany 
-    { 
-        return $this->hasMany(OffreEmploi::class); 
+
+    // =================================================================
+    // RELATIONS
+    // =================================================================
+
+    public function departement(): BelongsTo
+    {
+        return $this->belongsTo(Departement::class, 'departement_id');
+    }
+
+    public function employes(): HasMany
+    {
+        return $this->hasMany(Employe::class, 'poste_id');
+    }
+
+    // =================================================================
+    // SCOPES & HELPERS
+    // =================================================================
+
+    public function scopeActifs($query)
+    {
+        return $query->where('statut', 1);
+    }
+
+    public function isActif(): bool
+    {
+        return (bool) $this->statut;
+    }
+
+    public function estUtilise(): bool
+    {
+        return $this->employes()->exists();
     }
 }

@@ -13,28 +13,41 @@ class DashboardController extends Controller
 {
     public function index(): View
     {
-        $user    = Auth::user();
-        $employe = Employe::where('user_id', $user->id)
+        $user = Auth::user();
+
+        // ⭐ Chercher l'employé par matricule
+        $employe = Employe::where('matricule', $user->matricule)
             ->with(['departement', 'poste', 'contrats'])
             ->first();
 
         if (!$employe) {
-            return view('employee.dashboard', ['employe' => null]);
+            return view('employee.dashboard', [
+                'employe' => null,
+                'stats'   => [
+                    'presences_mois'   => 0,
+                    'conges_attente'   => 0,
+                    'conges_approuves' => 0,
+                    'solde_conges'     => 0,
+                ],
+                'dernieresPresences' => collect(),
+                'derniersConges'     => collect(),
+                'contratActif'       => null,
+            ]);
         }
 
         // Stats
         $stats = [
-            'presences_mois'    => Presence::where('employe_id', $employe->id)
+            'presences_mois'   => Presence::where('employe_id', $employe->id)
                 ->whereMonth('date', now()->month)
                 ->where('statut', 'present')
                 ->count(),
-            'conges_attente'    => DemandeConge::where('employe_id', $employe->id)
+            'conges_attente'   => DemandeConge::where('employe_id', $employe->id)
                 ->where('statut', 'en_attente')
                 ->count(),
-            'conges_approuves'  => DemandeConge::where('employe_id', $employe->id)
+            'conges_approuves' => DemandeConge::where('employe_id', $employe->id)
                 ->where('statut', 'approuve')
                 ->sum('nombre_jours'),
-            'jours_conges_max'  => 30,
+            'jours_conges_max' => 30,
         ];
 
         $stats['solde_conges'] = $stats['jours_conges_max'] - $stats['conges_approuves'];
