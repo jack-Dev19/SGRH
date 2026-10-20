@@ -26,7 +26,7 @@ return new class extends Migration
             $table->string('salaire')->nullable();
 
             // Deadline
-            $table->date('deadline')->nullable();
+            $table->date('date_limite')->nullable();
 
             // Contact
             $table->string('email_contact');
