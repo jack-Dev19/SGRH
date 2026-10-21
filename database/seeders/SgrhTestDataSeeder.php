@@ -192,18 +192,27 @@ class SgrhTestDataSeeder extends Seeder
             ]);
         }
 
-        // Les départements pointent vers les employés, donc le responsable est affecté après création des employés.
+        
+        // Les responsables des départements sont des utilisateurs.
+        // La colonne departements.responsable_id référence users.id.
         $responsables = [
-            'Direction générale' => 'MAT-001',
-            'Ressources humaines' => 'MAT-002',
-            'Développement informatique' => 'MAT-003',
-            'Réseaux et systèmes' => 'MAT-005',
-            'Administration et finances' => 'MAT-002',
+            'Direction générale' => 'admin@madatech.test',
+            'Ressources humaines' => 'rh@madatech.test',
+            'Développement informatique' => 'manager@madatech.test',
+            'Réseaux et systèmes' => 'tiana@madatech.test',
+            'Administration et finances' => 'rh@madatech.test',
         ];
-        foreach ($responsables as $depNom => $matricule) {
+
+        foreach ($responsables as $depNom => $emailResponsable) {
+            // Récupérer l'UUID de l'utilisateur, et non celui de l'employé.
+            $responsableId = $this->id('users', [
+                'email' => $emailResponsable,
+            ]);
+
+            // Mettre à jour le département avec le bon UUID.
             $this->put('departements', ['nom' => $depNom], [
                 'nom' => $depNom,
-                'responsable_id' => $this->id('employes', ['matricule' => $matricule]),
+                'responsable_id' => $responsableId,
             ]);
         }
 
