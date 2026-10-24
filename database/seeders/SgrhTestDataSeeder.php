@@ -105,6 +105,7 @@ class SgrhTestDataSeeder extends Seeder
             ['Responsable RH', 'Gestion des ressources humaines'],
             ['Chef de département', 'Suivi de son équipe'],
             ['Employé', 'Accès à ses propres informations'],
+            ['Recruteur', 'Gestion du recrutement'],
         ];
 
         foreach ($roles as [$nom, $description]) {
@@ -119,6 +120,7 @@ class SgrhTestDataSeeder extends Seeder
             ['Hery Randria', 'manager@madatech.test', 'MGR001', 'Chef de département'],
             ['Mialy Rakoto', 'mialy@madatech.test', 'EMP001', 'Employé'],
             ['Tiana Rasoanaivo', 'tiana@madatech.test', 'EMP002', 'Employé'],
+            ['Fara Andriamihaja', 'recruteur@madatech.test', 'REC001', 'Recruteur'],
         ];
 
         foreach ($users as [$name, $email, $matricule, $roleNom]) {
@@ -175,6 +177,7 @@ class SgrhTestDataSeeder extends Seeder
             ['manager@madatech.test', 'MAT-003', 'Randria', 'Hery', 'Homme', '1992-11-09', '0340000003', 'Développement informatique', 'Développeur full-stack', '2024-01-15'],
             ['mialy@madatech.test', 'MAT-004', 'Rakoto', 'Mialy', 'Femme', '1998-04-12', '0340000004', 'Développement informatique', 'Développeur web', '2025-01-06'],
             ['tiana@madatech.test', 'MAT-005', 'Rasoanaivo', 'Tiana', 'Homme', '1996-08-20', '0340000005', 'Réseaux et systèmes', 'Technicien réseau', '2025-06-02'],
+            ['recruteur@madatech.test', 'MAT-006', 'Andriamihaja', 'Fara', 'Femme', '1995-12-03', '0340000006', 'Ressources humaines', 'Assistant RH', '2025-09-01'],
         ];
 
         foreach ($employes as [$email, $matricule, $nom, $prenom, $sexe, $naissance, $telephone, $depNom, $posteNom, $embauche]) {
@@ -425,7 +428,7 @@ class SgrhTestDataSeeder extends Seeder
             ['À améliorer', 40, 59.99, 2],
             ['Satisfaisant', 60, 74.99, 3],
             ['Très satisfaisant', 75, 89.99, 4],
-            ['Excellent', 90, 99, 5],
+            ['Excellent', 90, 100, 5],
         ];
         foreach ($niveaux as [$nom, $min, $max, $ordre]) {
             $this->put('niveaux_appreciation', ['nom' => $nom], [
@@ -602,8 +605,8 @@ class SgrhTestDataSeeder extends Seeder
 
         $entretiens = [
             ['toky.candidat@madatech.test', 'Développeur web junior', '2026-10-20', '09:00:00', 'technique', 'rh@madatech.test', 4],
-            ['lova.candidat@madatech.test', 'Développeur web junior', '2026-10-22', '10:00:00', 'technique', 'rh@madatech.test', 3],
-            ['soa.candidat@madatech.test', 'Technicien réseau', '2026-10-24', '14:00:00', 'technique', 'rh@madatech.test', 5],
+            ['lova.candidat@madatech.test', 'Développeur web junior', '2026-10-22', '10:00:00', 'technique', 'recruteur@madatech.test', 3],
+            ['soa.candidat@madatech.test', 'Technicien réseau', '2026-10-24', '14:00:00', 'technique', 'recruteur@madatech.test', 5],
         ];
         foreach ($entretiens as [$email, $titre, $date, $heure, $type, $evaluateurEmail, $note]) {
             $candId = $this->id('candidats', ['email' => $email]);
@@ -633,6 +636,7 @@ class SgrhTestDataSeeder extends Seeder
         foreach ([
             ['admin@madatech.test', 'Rapport des effectifs', 'effectifs'],
             ['rh@madatech.test', 'Rapport des congés', 'conges'],
+            ['recruteur@madatech.test', 'Rapport de recrutement', 'recrutement'],
         ] as [$email, $titre, $type]) {
             $this->put('rapports', ['titre' => $titre], [
                 'user_id' => $this->id('users', ['email' => $email]),
@@ -646,6 +650,7 @@ class SgrhTestDataSeeder extends Seeder
         foreach ([
             ['rh@madatech.test', 'Nouvelle demande de congé', 'Une demande de congé nécessite une vérification.', 'conge'],
             ['mialy@madatech.test', 'Décision de congé', 'Le statut de votre demande de congé a été mis à jour.', 'conge'],
+            ['recruteur@madatech.test', 'Nouvelle candidature', 'Une candidature a été reçue pour une offre.', 'recrutement'],
         ] as [$email, $titre, $message, $type]) {
             $this->put('notifications', ['user_id' => $this->id('users', ['email' => $email]), 'titre' => $titre], [
                 'user_id' => $this->id('users', ['email' => $email]), 'titre' => $titre,
@@ -657,6 +662,7 @@ class SgrhTestDataSeeder extends Seeder
         foreach ([
             ['admin@madatech.test', 'creation', 'departements', 'Création de données de test pour le département.'],
             ['rh@madatech.test', 'validation', 'demandes_conges', 'Action simulée sur une demande de congé.'],
+            ['recruteur@madatech.test', 'consultation', 'candidatures', 'Consultation simulée d’une candidature.'],
         ] as [$email, $action, $module, $description]) {
             $this->put('historiques_actions', [
                 'user_id' => $this->id('users', ['email' => $email]),
