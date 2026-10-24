@@ -16,12 +16,9 @@
 
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
 
-        {{-- ============================================= --}}
-        {{-- CARTE BLEU → VIOLET (aperçu) --}}
-        {{-- ============================================= --}}
+        {{-- CARTE BLEU → VIOLET --}}
         <div class="relative bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-600 rounded-[2rem] shadow-2xl shadow-blue-500/30 overflow-hidden min-h-[700px] flex flex-col lg:sticky lg:top-24">
 
-            {{-- Badge matricule --}}
             <div class="absolute top-6 right-6 z-20 px-4 py-2 rounded-full bg-white/20 backdrop-blur-sm border border-white/30">
                 <span class="text-xs font-bold text-white tracking-wider">{{ $employe->matricule }}</span>
             </div>
@@ -42,27 +39,6 @@
                     <p class="text-blue-100 text-sm leading-relaxed max-w-xs mx-auto mb-6">
                         Mettez à jour les informations de <span class="font-bold text-white">{{ $employe->nom_complet }}</span>.
                     </p>
-
-                    <div class="space-y-2 max-w-xs mx-auto text-left">
-                        <div class="flex items-center gap-2 text-xs text-blue-100">
-                            <div class="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center shrink-0">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>
-                            </div>
-                            <span>Informations personnelles</span>
-                        </div>
-                        <div class="flex items-center gap-2 text-xs text-blue-100">
-                            <div class="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center shrink-0">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>
-                            </div>
-                            <span>Département & poste</span>
-                        </div>
-                        <div class="flex items-center gap-2 text-xs text-blue-100">
-                            <div class="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center shrink-0">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>
-                            </div>
-                            <span>Date d'embauche & statut</span>
-                        </div>
-                    </div>
                 </div>
             </div>
 
@@ -73,11 +49,9 @@
             </div>
         </div>
 
-        {{-- ============================================= --}}
         {{-- FORMULAIRE --}}
-        {{-- ============================================= --}}
         <div class="relative bg-white rounded-[2rem] shadow-2xl shadow-blue-500/20 overflow-hidden min-h-[700px] flex flex-col">
-            <form action="{{ route('gestion.employes.update', $employe) }}" method="POST" class="relative z-10 px-8 pt-10 pb-32 flex-1">
+            <form action="{{ route('gestion.employes.update', $employe) }}" method="POST" class="relative z-10 px-8 pt-10 pb-32 flex-1" id="employe-form">
                 @csrf
                 @method('PUT')
 
@@ -94,14 +68,26 @@
 
                 <div class="space-y-3">
 
-                    {{-- Matricule --}}
+                    {{-- ⭐ MATRICULE DÉSACTIVÉ ⭐ --}}
                     <div class="relative">
-                        <div class="absolute left-4 top-1/2 -translate-y-1/2 text-blue-600 pointer-events-none">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14"/></svg>
+                        <div class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14"/>
+                            </svg>
                         </div>
-                        <input type="text" name="matricule" required value="{{ old('matricule', $employe->matricule) }}" placeholder="Matricule"
-                            class="w-full pl-12 pr-4 py-3.5 rounded-full bg-blue-100/70 text-sm text-slate-700 placeholder-slate-500 focus:outline-none focus:ring-4 focus:ring-blue-300/40 focus:bg-white transition">
+                        <input type="hidden" name="matricule" value="{{ old('matricule', $employe->matricule) }}">
+                        <input type="text" disabled
+                            value="{{ $employe->matricule }}"
+                            class="w-full pl-12 pr-12 py-3.5 rounded-full bg-slate-200 text-sm text-slate-500 font-mono font-bold cursor-not-allowed border-2 border-dashed border-slate-300">
+                        <div class="absolute right-4 top-1/2 -translate-y-1/2">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+                            </svg>
+                        </div>
                     </div>
+                    <p class="text-[10px] text-slate-400 px-3 -mt-1 italic">
+                        🔒 Matricule non modifiable
+                    </p>
 
                     {{-- Prénom + Nom --}}
                     <div class="grid grid-cols-2 gap-3">
@@ -109,46 +95,31 @@
                             <div class="absolute left-4 top-1/2 -translate-y-1/2 text-blue-600 pointer-events-none">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
                             </div>
-                            <input type="text" name="prenom" required value="{{ old('prenom', $employe->prenom) }}" placeholder="Prénom"
+                            <input type="text" name="prenom" required value="{{ old('prenom', $employe->prenom) }}" placeholder="Prénom *"
                                 class="w-full pl-12 pr-4 py-3.5 rounded-full bg-blue-100/70 text-sm text-slate-700 placeholder-slate-500 focus:outline-none focus:ring-4 focus:ring-blue-300/40 focus:bg-white transition">
                         </div>
                         <div class="relative">
                             <div class="absolute left-4 top-1/2 -translate-y-1/2 text-blue-600 pointer-events-none">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
                             </div>
-                            <input type="text" name="nom" required value="{{ old('nom', $employe->nom) }}" placeholder="Nom"
+                            <input type="text" name="nom" required value="{{ old('nom', $employe->nom) }}" placeholder="Nom *"
                                 class="w-full pl-12 pr-4 py-3.5 rounded-full bg-blue-100/70 text-sm text-slate-700 placeholder-slate-500 focus:outline-none focus:ring-4 focus:ring-blue-300/40 focus:bg-white transition">
                         </div>
                     </div>
 
-                    {{-- Sexe --}}
-                    <div class="relative" data-dropdown="sexe">
-                        <input type="hidden" name="sexe" id="input-sexe" value="{{ old('sexe', $employe->sexe) }}">
-                        <button type="button" id="dropdown-sexe-btn"
-                            class="w-full inline-flex items-center justify-between gap-2 pl-12 pr-10 py-3.5 rounded-full bg-blue-100/70 text-sm text-slate-700 font-medium focus:outline-none focus:ring-4 focus:ring-blue-300/40 focus:bg-white transition">
-                            <div class="absolute left-4 top-1/2 -translate-y-1/2 text-blue-600 pointer-events-none">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
-                            </div>
-                            <span id="dropdown-sexe-label" class="truncate text-left">
-                                {{ old('sexe', $employe->sexe) ?: 'Sexe' }}
-                            </span>
-                            <svg id="dropdown-sexe-chevron" xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-blue-600 transition-transform duration-300 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/></svg>
-                        </button>
-                        <div id="dropdown-sexe-menu" class="hidden absolute top-full left-0 right-0 mt-2 bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden z-50">
-                            <button type="button" onclick="selectDropdown('sexe', 'Homme', 'Homme')"
-                                class="w-full text-left px-4 py-3 text-sm text-slate-700 hover:bg-blue-50 hover:text-blue-700 transition flex items-center gap-3">
-                                <div class="w-7 h-7 rounded-lg bg-blue-100 flex items-center justify-center shrink-0">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
-                                </div>
-                                Homme
-                            </button>
-                            <button type="button" onclick="selectDropdown('sexe', 'Femme', 'Femme')"
-                                class="w-full text-left px-4 py-3 text-sm text-slate-700 hover:bg-pink-50 hover:text-pink-700 transition flex items-center gap-3 border-t border-slate-100">
-                                <div class="w-7 h-7 rounded-lg bg-pink-100 flex items-center justify-center shrink-0">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 text-pink-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
-                                </div>
-                                Femme
-                            </button>
+                    {{-- Sexe (SELECT natif) --}}
+                    <div class="relative">
+                        <div class="absolute left-4 top-1/2 -translate-y-1/2 text-blue-600 pointer-events-none z-10">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+                        </div>
+                        <select name="sexe"
+                            class="w-full pl-12 pr-10 py-3.5 rounded-full bg-blue-100/70 text-sm text-slate-700 focus:outline-none focus:ring-4 focus:ring-blue-300/40 focus:bg-white transition appearance-none">
+                            <option value="">Sexe</option>
+                            <option value="Homme" {{ old('sexe', $employe->sexe) === 'Homme' ? 'selected' : '' }}>Homme</option>
+                            <option value="Femme" {{ old('sexe', $employe->sexe) === 'Femme' ? 'selected' : '' }}>Femme</option>
+                        </select>
+                        <div class="absolute right-4 top-1/2 -translate-y-1/2 text-blue-600 pointer-events-none">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/></svg>
                         </div>
                     </div>
 
@@ -157,7 +128,7 @@
                         <div class="absolute left-4 top-1/2 -translate-y-1/2 text-blue-600 pointer-events-none">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
                         </div>
-                        <input type="email" name="email" required value="{{ old('email', $employe->email) }}" placeholder="Email"
+                        <input type="email" name="email" required value="{{ old('email', $employe->email) }}" placeholder="Email *"
                             class="w-full pl-12 pr-4 py-3.5 rounded-full bg-blue-100/70 text-sm text-slate-700 placeholder-slate-500 focus:outline-none focus:ring-4 focus:ring-blue-300/40 focus:bg-white transition">
                     </div>
 
@@ -170,63 +141,49 @@
                             class="w-full pl-12 pr-4 py-3.5 rounded-full bg-blue-100/70 text-sm text-slate-700 placeholder-slate-500 focus:outline-none focus:ring-4 focus:ring-blue-300/40 focus:bg-white transition">
                     </div>
 
-                    {{-- Département --}}
-                    <div class="relative" data-dropdown="departement_id">
-                        <input type="hidden" name="departement_id" id="input-departement_id" value="{{ old('departement_id', $employe->departement_id) }}">
-                        <button type="button" id="dropdown-departement_id-btn"
-                            class="w-full inline-flex items-center justify-between gap-2 pl-12 pr-10 py-3.5 rounded-full bg-blue-100/70 text-sm text-slate-700 font-medium focus:outline-none focus:ring-4 focus:ring-blue-300/40 focus:bg-white transition">
-                            <div class="absolute left-4 top-1/2 -translate-y-1/2 text-blue-600 pointer-events-none">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
-                            </div>
-                            <span id="dropdown-departement_id-label" class="truncate text-left">
-                                @php $deptSel = $departements->firstWhere('id', old('departement_id', $employe->departement_id)); @endphp
-                                {{ $deptSel ? $deptSel->nom : 'Sélectionner un département' }}
-                            </span>
-                            <svg id="dropdown-departement_id-chevron" xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-blue-600 transition-transform duration-300 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/></svg>
-                        </button>
-                        <div id="dropdown-departement_id-menu" class="hidden absolute top-full left-0 right-0 mt-2 bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden z-50 max-h-64 overflow-y-auto">
-                            <button type="button" onclick="selectDropdown('departement_id', '', 'Sélectionner un département')"
-                                class="w-full text-left px-4 py-3 text-sm text-slate-500 hover:bg-slate-50 transition">Aucun</button>
+                    {{-- ⭐ DÉPARTEMENT (SELECT natif) ⭐ --}}
+                    <div class="relative">
+                        <div class="absolute left-4 top-1/2 -translate-y-1/2 text-blue-600 pointer-events-none z-10">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
+                        </div>
+                        <select name="departement_id" required
+                            class="w-full pl-12 pr-10 py-3.5 rounded-full bg-blue-100/70 text-sm text-slate-700 focus:outline-none focus:ring-4 focus:ring-blue-300/40 focus:bg-white transition appearance-none @error('departement_id') border-2 border-red-400 @enderror">
+                            <option value="">— Sélectionner un département * —</option>
                             @foreach($departements as $dept)
-                                <button type="button" onclick="selectDropdown('departement_id', '{{ $dept->id }}', '{{ $dept->nom }}')"
-                                    class="w-full text-left px-4 py-3 text-sm text-slate-700 hover:bg-blue-50 hover:text-blue-700 transition flex items-center gap-3 border-t border-slate-100">
-                                    <div class="w-7 h-7 rounded-lg bg-blue-100 flex items-center justify-center shrink-0">
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
-                                    </div>
-                                    <span class="font-medium">{{ $dept->nom }}</span>
-                                </button>
+                                <option value="{{ $dept->id }}" {{ old('departement_id', $employe->departement_id) == $dept->id ? 'selected' : '' }}>
+                                    {{ $dept->nom }}
+                                </option>
                             @endforeach
+                        </select>
+                        <div class="absolute right-4 top-1/2 -translate-y-1/2 text-blue-600 pointer-events-none">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/></svg>
                         </div>
                     </div>
+                    @error('departement_id')
+                        <p class="text-red-500 text-xs px-3 -mt-2">{{ $message }}</p>
+                    @enderror
 
-                    {{-- Poste --}}
-                    <div class="relative" data-dropdown="poste_id">
-                        <input type="hidden" name="poste_id" id="input-poste_id" value="{{ old('poste_id', $employe->poste_id) }}">
-                        <button type="button" id="dropdown-poste_id-btn"
-                            class="w-full inline-flex items-center justify-between gap-2 pl-12 pr-10 py-3.5 rounded-full bg-blue-100/70 text-sm text-slate-700 font-medium focus:outline-none focus:ring-4 focus:ring-blue-300/40 focus:bg-white transition">
-                            <div class="absolute left-4 top-1/2 -translate-y-1/2 text-blue-600 pointer-events-none">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
-                            </div>
-                            <span id="dropdown-poste_id-label" class="truncate text-left">
-                                @php $posteSel = $postes->firstWhere('id', old('poste_id', $employe->poste_id)); @endphp
-                                {{ $posteSel ? $posteSel->nom : 'Sélectionner un poste' }}
-                            </span>
-                            <svg id="dropdown-poste_id-chevron" xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-blue-600 transition-transform duration-300 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/></svg>
-                        </button>
-                        <div id="dropdown-poste_id-menu" class="hidden absolute top-full left-0 right-0 mt-2 bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden z-50 max-h-64 overflow-y-auto">
-                            <button type="button" onclick="selectDropdown('poste_id', '', 'Sélectionner un poste')"
-                                class="w-full text-left px-4 py-3 text-sm text-slate-500 hover:bg-slate-50 transition">Aucun</button>
+                    {{-- ⭐ POSTE (SELECT natif) ⭐ --}}
+                    <div class="relative">
+                        <div class="absolute left-4 top-1/2 -translate-y-1/2 text-blue-600 pointer-events-none z-10">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+                        </div>
+                        <select name="poste_id" required
+                            class="w-full pl-12 pr-10 py-3.5 rounded-full bg-blue-100/70 text-sm text-slate-700 focus:outline-none focus:ring-4 focus:ring-blue-300/40 focus:bg-white transition appearance-none @error('poste_id') border-2 border-red-400 @enderror">
+                            <option value="">— Sélectionner un poste * —</option>
                             @foreach($postes as $poste)
-                                <button type="button" onclick="selectDropdown('poste_id', '{{ $poste->id }}', '{{ $poste->nom }}')"
-                                    class="w-full text-left px-4 py-3 text-sm text-slate-700 hover:bg-blue-50 hover:text-blue-700 transition flex items-center gap-3 border-t border-slate-100">
-                                    <div class="w-7 h-7 rounded-lg bg-blue-100 flex items-center justify-center shrink-0">
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
-                                    </div>
-                                    <span class="font-medium">{{ $poste->nom }}</span>
-                                </button>
+                                <option value="{{ $poste->id }}" {{ old('poste_id', $employe->poste_id) == $poste->id ? 'selected' : '' }}>
+                                    {{ $poste->nom }}
+                                </option>
                             @endforeach
+                        </select>
+                        <div class="absolute right-4 top-1/2 -translate-y-1/2 text-blue-600 pointer-events-none">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/></svg>
                         </div>
                     </div>
+                    @error('poste_id')
+                        <p class="text-red-500 text-xs px-3 -mt-2">{{ $message }}</p>
+                    @enderror
 
                     {{-- Adresse --}}
                     <div class="relative">
@@ -257,30 +214,18 @@
                         </div>
                     </div>
 
-                    {{-- Statut --}}
-                    <div class="relative" data-dropdown="statut">
-                        <input type="hidden" name="statut" id="input-statut" value="{{ old('statut', $employe->statut) }}">
-                        <button type="button" id="dropdown-statut-btn"
-                            class="w-full inline-flex items-center justify-between gap-2 pl-12 pr-10 py-3.5 rounded-full bg-blue-100/70 text-sm text-slate-700 font-medium focus:outline-none focus:ring-4 focus:ring-blue-300/40 focus:bg-white transition">
-                            <div class="absolute left-4 top-1/2 -translate-y-1/2 text-blue-600 pointer-events-none">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                            </div>
-                            <span id="dropdown-statut-label" class="truncate text-left">
-                                {{ old('statut', $employe->statut) === 'inactif' ? 'Inactif' : 'Actif' }}
-                            </span>
-                            <svg id="dropdown-statut-chevron" xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-blue-600 transition-transform duration-300 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/></svg>
-                        </button>
-                        <div id="dropdown-statut-menu" class="hidden absolute top-full left-0 right-0 mt-2 bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden z-50">
-                            <button type="button" onclick="selectDropdown('statut', 'actif', 'Actif')"
-                                class="w-full text-left px-4 py-3 text-sm text-slate-700 hover:bg-emerald-50 hover:text-emerald-700 transition flex items-center gap-3">
-                                <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
-                                Actif
-                            </button>
-                            <button type="button" onclick="selectDropdown('statut', 'inactif', 'Inactif')"
-                                class="w-full text-left px-4 py-3 text-sm text-slate-700 hover:bg-slate-50 transition border-t border-slate-100 flex items-center gap-3">
-                                <span class="w-2.5 h-2.5 rounded-full bg-slate-400"></span>
-                                Inactif
-                            </button>
+                    {{-- Statut (SELECT natif) --}}
+                    <div class="relative">
+                        <div class="absolute left-4 top-1/2 -translate-y-1/2 text-blue-600 pointer-events-none z-10">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                        </div>
+                        <select name="statut" required
+                            class="w-full pl-12 pr-10 py-3.5 rounded-full bg-blue-100/70 text-sm text-slate-700 focus:outline-none focus:ring-4 focus:ring-blue-300/40 focus:bg-white transition appearance-none">
+                            <option value="actif" {{ old('statut', $employe->statut) === 'actif' ? 'selected' : '' }}>Actif</option>
+                            <option value="inactif" {{ old('statut', $employe->statut) === 'inactif' ? 'selected' : '' }}>Inactif</option>
+                        </select>
+                        <div class="absolute right-4 top-1/2 -translate-y-1/2 text-blue-600 pointer-events-none">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/></svg>
                         </div>
                     </div>
                 </div>
@@ -316,33 +261,3 @@
 </div>
 
 @endsection
-
-@push('scripts')
-<script>
-    window.selectDropdown = function(type, value, label) {
-        document.getElementById('input-' + type).value = value;
-        document.getElementById('dropdown-' + type + '-label').textContent = label;
-        document.getElementById('dropdown-' + type + '-menu').classList.add('hidden');
-        document.getElementById('dropdown-' + type + '-chevron').style.transform = 'rotate(0deg)';
-    };
-    window.toggleDropdown = function(type) {
-        const menu = document.getElementById('dropdown-' + type + '-menu');
-        const chevron = document.getElementById('dropdown-' + type + '-chevron');
-        const isHidden = menu.classList.contains('hidden');
-        document.querySelectorAll('[id^="dropdown-"][id$="-menu"]').forEach(m => m.classList.add('hidden'));
-        document.querySelectorAll('[id^="dropdown-"][id$="-chevron"]').forEach(c => c.style.transform = 'rotate(0deg)');
-        if (isHidden) { menu.classList.remove('hidden'); chevron.style.transform = 'rotate(180deg)'; }
-    };
-    document.addEventListener('DOMContentLoaded', function() {
-        ['sexe', 'departement_id', 'poste_id', 'statut'].forEach(type => {
-            const btn = document.getElementById('dropdown-' + type + '-btn');
-            if (btn) btn.addEventListener('click', e => { e.stopPropagation(); toggleDropdown(type); });
-        });
-        document.addEventListener('click', () => {
-            document.querySelectorAll('[id^="dropdown-"][id$="-menu"]').forEach(m => m.classList.add('hidden'));
-            document.querySelectorAll('[id^="dropdown-"][id$="-chevron"]').forEach(c => c.style.transform = 'rotate(0deg)');
-        });
-        document.querySelectorAll('[id^="dropdown-"][id$="-menu"]').forEach(m => m.addEventListener('click', e => e.stopPropagation()));
-    });
-</script>
-@endpush

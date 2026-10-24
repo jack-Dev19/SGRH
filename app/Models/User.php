@@ -5,29 +5,15 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
-/**
- * Modèle User
- * -------------
- * Représente un compte utilisateur pouvant se connecter au SGRH.
- *
- * Particularités :
- * - Utilise des UUID (comme toutes les tables du seeder).
- * - Possède un champ "matricule" unique (ex: ADM001) en plus de l'email.
- * - Possède un champ "statut" (booléen) qui bloque la connexion si désactivé.
- * - Est lié à un rôle via role_id (FK vers la table roles).
- */
 class User extends Authenticatable
 {
     use HasFactory, HasUuids, Notifiable;
 
-    /**
-     * Attributs assignables en masse.
-     * IMPORTANT : "matricule", "role_id" et "statut" doivent être ici
-     * sinon le seeder ne pourra pas les insérer.
-     */
     protected $fillable = [
         'name',
         'email',
@@ -35,22 +21,14 @@ class User extends Authenticatable
         'role_id',
         'password',
         'statut',
+        'email_verified_at',
     ];
 
-    /**
-     * Attributs cachés lors de la sérialisation (JSON).
-     * Le mot de passe ne doit JAMAIS sortir de la BDD.
-     */
     protected $hidden = [
         'password',
         'remember_token',
     ];
 
-    /**
-     * Casts automatiques.
-     * - "password" => "hashed" : hash automatiquement à l'assignation.
-     * - "statut" => "boolean" : garantit un vrai booléen PHP.
-     */
     protected function casts(): array
     {
         return [
@@ -60,38 +38,64 @@ class User extends Authenticatable
         ];
     }
 
-    /**
-     * Relation : un utilisateur appartient à un rôle.
-     * Utilisé pour l'affichage et les autorisations.
-     */
+    // =================================================================
+    // RELATIONS
+    // =================================================================
+
     public function role(): BelongsTo
     {
-        return $this->belongsTo(Role::class);
+        return $this->belongsTo(Role::class, 'role_id');
     }
 
     /**
-     * Relation (optionnelle) : un utilisateur peut être lié à un employé.
-     * Utile si la table employes possède une clé user_id.
+     * Employé lié par matricule.
      */
-    public function employe()
+    public function employe(): HasOne
     {
-        return $this->hasOne(Employe::class);
+        return $this->hasOne(Employe::class, 'matricule', 'matricule');
     }
 
-    /**
-     * Accesseur pratique : retourne "Prénom Nom" ou le matricule.
-     */
-    public function getIdentifiantAttribute(): string
+    public function departementsResponsables(): HasMany
     {
-        return $this->matricule ?? $this->email;
+        return $this->hasMany(Departement::class, 'responsable_id', 'id');
     }
 
-    /**
-     * Vérifie si l'utilisateur possède un rôle donné.
-     * Utilisation : $user->hasRole('Administrateur')
-     */
+    // =================================================================
+    // HELPERS DE RÔLE
+    // =================================================================
+
     public function hasRole(string $nomRole): bool
     {
         return $this->role && $this->role->nom === $nomRole;
+    }
+
+    public function hasAnyRole(array $roles): bool
+    {
+        return $this->role && in_array($this->role->nom, $roles, true);
+    }
+
+    public function isAdmin(): bool
+    {
+        return $this->hasRole('Administrateur');
+    }
+
+    public function isRH(): bool
+    {
+        return $this->hasRole('Responsable RH');
+    }
+
+    public function isChef(): bool
+    {
+        return $this->hasRole('Chef de département');
+    }
+
+    public function isEmploye(): bool
+    {
+        return $this->hasRole('Employé');
+    }
+
+    public function estActif(): bool
+    {
+        return (bool) $this->statut;
     }
 }

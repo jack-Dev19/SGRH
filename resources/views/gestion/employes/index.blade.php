@@ -6,21 +6,23 @@
 
 <div class="max-w-7xl mx-auto">
 
-    {{-- Message de succès --}}
+    {{-- ============================================= --}}
+    {{-- MESSAGES FLASH --}}
+    {{-- ============================================= --}}
     @if(session('success'))
-        <div class="bg-emerald-50 border border-emerald-200 text-emerald-700 rounded-2xl p-4 mb-6 flex items-center gap-3">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <div class="bg-emerald-50 border border-emerald-200 text-emerald-700 rounded-2xl p-4 mb-6 flex items-start gap-3">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
             </svg>
             <span class="text-sm font-medium">{{ session('success') }}</span>
         </div>
     @endif
 
-    {{-- En-tête --}}
+    {{-- EN-TÊTE --}}
     <div class="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 mb-6">
         <div>
             <h1 class="text-2xl md:text-3xl font-extrabold text-slate-900 mb-1">Gestion des employés</h1>
-            <p class="text-sm text-slate-500">Consultez et gérez les membres de votre équipe.</p>
+            <p class="text-sm text-slate-500">{{ $employes->total() }} employé(s) enregistré(s)</p>
         </div>
 
         <a href="{{ route('gestion.employes.create') }}"
@@ -32,13 +34,15 @@
         </a>
     </div>
 
+    {{-- ============================================= --}}
     {{-- BARRE DE RECHERCHE + FILTRES --}}
+    {{-- ============================================= --}}
     <div class="bg-white rounded-2xl border border-purple-100 p-4 mb-6 shadow-sm">
         <form method="GET" action="{{ route('gestion.employes.index') }}" class="flex flex-wrap items-center gap-3">
 
             {{-- Recherche --}}
             <div class="flex-1 min-w-[280px]">
-                <div class="relative group">
+                <div class="relative">
                     <div class="absolute left-4 top-1/2 -translate-y-1/2 text-purple-600 pointer-events-none">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
@@ -46,106 +50,37 @@
                     </div>
                     <input type="text" name="search" value="{{ request('search') }}"
                         placeholder="Rechercher par nom, matricule, email..."
-                        class="w-full pl-11 pr-4 py-3 rounded-full border-2 border-slate-200 bg-slate-50 text-sm text-slate-700 placeholder-slate-400 focus:bg-white focus:border-purple-500 focus:outline-none focus:ring-4 focus:ring-purple-100 transition-all duration-200">
+                        class="w-full pl-11 pr-4 py-3 rounded-full border-2 border-slate-200 bg-slate-50 text-sm text-slate-700 placeholder-slate-400 focus:bg-white focus:border-purple-500 focus:outline-none focus:ring-4 focus:ring-purple-100 transition">
                 </div>
             </div>
 
             {{-- Filtre Département --}}
-            <div class="relative min-w-[220px]">
-                <input type="hidden" name="departement" id="input-departement" value="{{ request('departement') }}">
-
-                <button type="button" id="dropdown-departement-btn"
-                    class="w-full inline-flex items-center justify-between gap-2 pl-11 pr-4 py-3 rounded-full border-2 border-slate-200 bg-slate-50 text-sm text-slate-700 font-medium hover:border-purple-300 focus:bg-white focus:border-purple-500 focus:outline-none focus:ring-4 focus:ring-purple-100 transition-all duration-200">
-                    <div class="absolute left-4 top-1/2 -translate-y-1/2 text-purple-600 pointer-events-none">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
-                        </svg>
-                    </div>
-                    <span id="dropdown-departement-label" class="truncate text-left">
-                        @php $deptSelectionne = $departements->firstWhere('id', request('departement')); @endphp
-                        {{ $deptSelectionne ? $deptSelectionne->nom : 'Tous les départements' }}
-                    </span>
-                    <svg id="dropdown-departement-chevron" xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-slate-400 transition-transform duration-300 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/>
-                    </svg>
-                </button>
-
-                <div id="dropdown-departement-menu" class="hidden absolute top-full left-0 right-0 mt-2 bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden z-50 min-w-[240px] max-h-64 overflow-y-auto">
-                    <button type="button" onclick="selectDropdown('departement', '', 'Tous les départements')"
-                        class="w-full text-left px-4 py-3 text-sm text-slate-700 hover:bg-purple-50 hover:text-purple-700 transition flex items-center gap-3">
-                        <div class="w-7 h-7 rounded-lg bg-slate-100 flex items-center justify-center shrink-0">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"/>
-                            </svg>
-                        </div>
-                        <span class="font-medium">Tous les départements</span>
-                    </button>
+            <div class="min-w-[220px]">
+                <select name="departement"
+                    class="w-full px-4 py-3 rounded-full border-2 border-slate-200 bg-slate-50 text-sm text-slate-700 focus:bg-white focus:border-purple-500 focus:outline-none focus:ring-4 focus:ring-purple-100 transition">
+                    <option value="">Tous les départements</option>
                     @foreach($departements as $dept)
-                        <button type="button" onclick="selectDropdown('departement', '{{ $dept->id }}', '{{ $dept->nom }}')"
-                            class="w-full text-left px-4 py-3 text-sm text-slate-700 hover:bg-purple-50 hover:text-purple-700 transition flex items-center gap-3 border-t border-slate-100">
-                            <div class="w-7 h-7 rounded-lg bg-purple-100 flex items-center justify-center shrink-0">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
-                                </svg>
-                            </div>
-                            <span class="font-medium">{{ $dept->nom }}</span>
-                        </button>
+                        <option value="{{ $dept->id }}" {{ request('departement') === $dept->id ? 'selected' : '' }}>
+                            {{ $dept->nom }}
+                        </option>
                     @endforeach
-                </div>
+                </select>
             </div>
 
             {{-- Filtre Statut --}}
-            <div class="relative min-w-[190px]">
-                <input type="hidden" name="statut" id="input-statut" value="{{ request('statut') }}">
-
-                <button type="button" id="dropdown-statut-btn"
-                    class="w-full inline-flex items-center justify-between gap-2 pl-11 pr-4 py-3 rounded-full border-2 border-slate-200 bg-slate-50 text-sm text-slate-700 font-medium hover:border-purple-300 focus:bg-white focus:border-purple-500 focus:outline-none focus:ring-4 focus:ring-purple-100 transition-all duration-200">
-                    <div class="absolute left-4 top-1/2 -translate-y-1/2 text-purple-600 pointer-events-none">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                        </svg>
-                    </div>
-                    <span id="dropdown-statut-label" class="truncate text-left">
-                        @if(request('statut') === 'actif') Actif
-                        @elseif(request('statut') === 'inactif') Inactif
-                        @else Tous les statuts
-                        @endif
-                    </span>
-                    <svg id="dropdown-statut-chevron" xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-slate-400 transition-transform duration-300 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/>
-                    </svg>
-                </button>
-
-                <div id="dropdown-statut-menu" class="hidden absolute top-full left-0 right-0 mt-2 bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden z-50 min-w-[200px]">
-                    <button type="button" onclick="selectDropdown('statut', '', 'Tous les statuts')"
-                        class="w-full text-left px-4 py-3 text-sm text-slate-700 hover:bg-purple-50 hover:text-purple-700 transition flex items-center gap-3">
-                        <div class="w-7 h-7 rounded-lg bg-slate-100 flex items-center justify-center shrink-0">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"/>
-                            </svg>
-                        </div>
-                        <span class="font-medium">Tous les statuts</span>
-                    </button>
-                    <button type="button" onclick="selectDropdown('statut', 'actif', 'Actif')"
-                        class="w-full text-left px-4 py-3 text-sm text-slate-700 hover:bg-emerald-50 hover:text-emerald-700 transition flex items-center gap-3 border-t border-slate-100">
-                        <div class="w-7 h-7 rounded-lg bg-emerald-100 flex items-center justify-center shrink-0">
-                            <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
-                        </div>
-                        <span class="font-medium">Actif</span>
-                    </button>
-                    <button type="button" onclick="selectDropdown('statut', 'inactif', 'Inactif')"
-                        class="w-full text-left px-4 py-3 text-sm text-slate-700 hover:bg-slate-100 transition flex items-center gap-3 border-t border-slate-100">
-                        <div class="w-7 h-7 rounded-lg bg-slate-100 flex items-center justify-center shrink-0">
-                            <span class="w-2 h-2 rounded-full bg-slate-400"></span>
-                        </div>
-                        <span class="font-medium">Inactif</span>
-                    </button>
-                </div>
+            <div class="min-w-[190px]">
+                <select name="statut"
+                    class="w-full px-4 py-3 rounded-full border-2 border-slate-200 bg-slate-50 text-sm text-slate-700 focus:bg-white focus:border-purple-500 focus:outline-none focus:ring-4 focus:ring-purple-100 transition">
+                    <option value="">Tous les statuts</option>
+                    <option value="actif"   {{ request('statut') === 'actif'   ? 'selected' : '' }}>Actif</option>
+                    <option value="inactif" {{ request('statut') === 'inactif' ? 'selected' : '' }}>Inactif</option>
+                    <option value="sorti"   {{ request('statut') === 'sorti'   ? 'selected' : '' }}>Sorti</option>
+                </select>
             </div>
 
             {{-- Bouton Filtrer --}}
             <button type="submit"
-                class="inline-flex items-center gap-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white text-sm font-bold px-6 py-3 rounded-full transition shadow-lg shadow-purple-600/30 transform hover:-translate-y-0.5">
+                class="inline-flex items-center gap-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white text-sm font-bold px-6 py-3 rounded-full transition shadow-lg shadow-purple-600/30">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/>
                 </svg>
@@ -164,17 +99,14 @@
         </form>
     </div>
 
-    {{-- Compteur --}}
-    <p class="text-xs text-slate-500 mb-4 px-1">
-        <span class="font-bold text-slate-700">{{ $employes->total() }}</span> employé(s) trouvé(s)
-    </p>
-
+    {{-- ============================================= --}}
     {{-- GRILLE DE CARDS --}}
+    {{-- ============================================= --}}
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
 
         @forelse($employes as $emp)
             @php
-                // Palette de couleurs variées (on alterne par index ou selon le département)
+                // Palette de couleurs variées
                 $palette = [
                     ['bg' => 'bg-blue-100',    'text' => 'text-blue-700',    'gradient' => 'from-blue-500 to-blue-600',       'dot' => 'bg-blue-500'],
                     ['bg' => 'bg-violet-100',  'text' => 'text-violet-700',  'gradient' => 'from-violet-500 to-violet-600',   'dot' => 'bg-violet-500'],
@@ -184,9 +116,23 @@
                     ['bg' => 'bg-slate-100',   'text' => 'text-slate-700',   'gradient' => 'from-slate-600 to-slate-700',     'dot' => 'bg-slate-500'],
                 ];
 
-                // Attribution par hash de l'ID pour stabilité
                 $idx = crc32($emp->id) % count($palette);
                 $c = $palette[$idx];
+
+                // ⭐ Compter les dépendances pour le JS
+                $pointagesCount = \App\Models\Pointage::where('employe_id', $emp->id)->count();
+                $documentsCount = \Schema::hasTable('documents')
+                    ? \DB::table('documents')->where('employe_id', $emp->id)->count()
+                    : 0;
+                $contratsCount = \Schema::hasTable('contrats')
+                    ? \DB::table('contrats')->where('employe_id', $emp->id)->count()
+                    : 0;
+                $absencesCount = \Schema::hasTable('absences')
+                    ? \DB::table('absences')->where('employe_id', $emp->id)->count()
+                    : 0;
+                $presencesCount = \Schema::hasTable('presences')
+                    ? \DB::table('presences')->where('employe_id', $emp->id)->count()
+                    : 0;
             @endphp
 
             <div class="group bg-white rounded-2xl border border-slate-200 overflow-hidden hover:shadow-xl hover:border-purple-200 hover:-translate-y-1 transition-all duration-300">
@@ -199,9 +145,13 @@
                                 <span class="w-1 h-1 rounded-full bg-emerald-300 animate-pulse"></span>
                                 Actif
                             </span>
-                        @else
+                        @elseif($emp->statut === 'inactif')
                             <span class="inline-flex items-center bg-white/25 backdrop-blur-sm border border-white/30 text-white text-[9px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">
                                 Inactif
+                            </span>
+                        @else
+                            <span class="inline-flex items-center bg-white/25 backdrop-blur-sm border border-white/30 text-white text-[9px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">
+                                Sorti
                             </span>
                         @endif
                     </div>
@@ -233,7 +183,7 @@
                             <div class="w-6 h-6 rounded-lg bg-slate-50 flex items-center justify-center shrink-0">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
                             </div>
-                            <span class="text-[11px] text-slate-600 truncate">{{ $emp->email }}</span>
+                            <span class="text-[11px] text-slate-600 truncate">{{ $emp->email ?? '—' }}</span>
                         </div>
                         <div class="flex items-center gap-2">
                             <div class="w-6 h-6 rounded-lg bg-slate-50 flex items-center justify-center shrink-0">
@@ -264,8 +214,17 @@
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
                             Modifier
                         </a>
+
+                        {{-- ⭐ Formulaire avec data-* pour SweetAlert2 --}}
                         <form action="{{ route('gestion.employes.destroy', $emp) }}" method="POST"
-                            onsubmit="return confirm('Voulez-vous vraiment supprimer cet employé ?');" class="flex-1">
+                            data-delete-employe
+                            data-employe-nom="{{ $emp->nom_complet }}"
+                            data-pointages="{{ $pointagesCount }}"
+                            data-documents="{{ $documentsCount }}"
+                            data-contrats="{{ $contratsCount }}"
+                            data-absences="{{ $absencesCount }}"
+                            data-presences="{{ $presencesCount }}"
+                            class="flex-1">
                             @csrf
                             @method('DELETE')
                             <button type="submit"
@@ -293,6 +252,7 @@
         @endforelse
     </div>
 
+    {{-- Pagination --}}
     @if($employes->hasPages())
         <div class="mt-6">{{ $employes->links() }}</div>
     @endif
@@ -300,45 +260,77 @@
 
 @endsection
 
+{{-- ============================================= --}}
+{{-- SCRIPTS : Confirmation suppression SweetAlert2 --}}
+{{-- ============================================= --}}
 @push('scripts')
 <script>
-    window.selectDropdown = function(type, value, label) {
-        document.getElementById('input-' + type).value = value;
-        document.getElementById('dropdown-' + type + '-label').textContent = label;
-        document.getElementById('dropdown-' + type + '-menu').classList.add('hidden');
-        document.getElementById('dropdown-' + type + '-chevron').style.transform = 'rotate(0deg)';
-    };
+document.addEventListener('DOMContentLoaded', function () {
+    // ═══════════════════════════════════════════════════════════════
+    // ⭐ Confirmation suppression employé (avec SweetAlert2)
+    // ═══════════════════════════════════════════════════════════════
+    document.querySelectorAll('form[data-delete-employe]').forEach(form => {
+        form.addEventListener('submit', function (e) {
+            e.preventDefault();
 
-    window.toggleDropdown = function(type) {
-        const menu = document.getElementById('dropdown-' + type + '-menu');
-        const chevron = document.getElementById('dropdown-' + type + '-chevron');
-        const isHidden = menu.classList.contains('hidden');
+            const nomEmploye = form.dataset.employeNom || 'cet employé';
+            const pointages  = parseInt(form.dataset.pointages || 0);
+            const documents  = parseInt(form.dataset.documents || 0);
+            const contrats   = parseInt(form.dataset.contrats || 0);
+            const absences   = parseInt(form.dataset.absences || 0);
+            const presences  = parseInt(form.dataset.presences || 0);
 
-        document.querySelectorAll('[id^="dropdown-"][id$="-menu"]').forEach(m => m.classList.add('hidden'));
-        document.querySelectorAll('[id^="dropdown-"][id$="-chevron"]').forEach(c => c.style.transform = 'rotate(0deg)');
+            const dependances = [];
+            if (pointages > 0) dependances.push(`📌 ${pointages} pointage(s)`);
+            if (documents > 0) dependances.push(`📄 ${documents} document(s)`);
+            if (contrats > 0)  dependances.push(`📝 ${contrats} contrat(s)`);
+            if (absences > 0)  dependances.push(`⚠️ ${absences} absence(s)`);
+            if (presences > 0) dependances.push(`✅ ${presences} présence(s)`);
 
-        if (isHidden) {
-            menu.classList.remove('hidden');
-            chevron.style.transform = 'rotate(180deg)';
-        }
-    };
+            // ⭐ CAS 1 : Dépendances présentes → avertissement fort
+            if (dependances.length > 0) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Suppression impossible',
+                    html: `
+                        <div style="text-align: left; font-size: 13px; line-height: 1.6;">
+                            <p style="margin-bottom: 10px;">
+                                L'employé <strong>${nomEmploye}</strong> ne peut pas être supprimé car il possède des enregistrements associés :
+                            </p>
+                            <ul style="margin: 10px 0 10px 20px; color: #dc2626; font-weight: 600;">
+                                ${dependances.map(d => `<li>${d}</li>`).join('')}
+                            </ul>
+                            <p style="margin-top: 10px; color: #475569;">
+                                Pour préserver l'historique, veuillez <strong>archiver</strong> ou <strong>désactiver</strong> cet employé plutôt que de le supprimer définitivement.
+                            </p>
+                        </div>
+                    `,
+                    confirmButtonColor: '#dc2626',
+                    confirmButtonText: 'Compris',
+                    showCloseButton: true,
+                    allowOutsideClick: true,
+                });
+                return;
+            }
 
-    document.addEventListener('DOMContentLoaded', function() {
-        const deptBtn = document.getElementById('dropdown-departement-btn');
-        if (deptBtn) {
-            deptBtn.addEventListener('click', e => { e.stopPropagation(); toggleDropdown('departement'); });
-        }
-        const statutBtn = document.getElementById('dropdown-statut-btn');
-        if (statutBtn) {
-            statutBtn.addEventListener('click', e => { e.stopPropagation(); toggleDropdown('statut'); });
-        }
-        document.addEventListener('click', () => {
-            document.querySelectorAll('[id^="dropdown-"][id$="-menu"]').forEach(m => m.classList.add('hidden'));
-            document.querySelectorAll('[id^="dropdown-"][id$="-chevron"]').forEach(c => c.style.transform = 'rotate(0deg)');
-        });
-        document.querySelectorAll('[id^="dropdown-"][id$="-menu"]').forEach(menu => {
-            menu.addEventListener('click', e => e.stopPropagation());
+            // ⭐ CAS 2 : Aucune dépendance → confirmation standard
+            Swal.fire({
+                icon: 'warning',
+                title: 'Confirmer la suppression',
+                html: `Voulez-vous vraiment supprimer <strong>${nomEmploye}</strong> ?<br><br>
+                       <span style="color: #dc2626; font-size: 12px;">⚠️ Cette action est irréversible.</span>`,
+                showCancelButton: true,
+                confirmButtonColor: '#dc2626',
+                cancelButtonColor: '#64748b',
+                confirmButtonText: 'Oui, supprimer',
+                cancelButtonText: 'Annuler',
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    form.submit();
+                }
+            });
         });
     });
+});
 </script>
 @endpush

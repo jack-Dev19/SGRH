@@ -3,11 +3,13 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\Contrat;
 use App\Models\DemandeConge;
 use App\Models\Departement;
 use App\Models\Employe;
-use App\Models\Notification;
 use App\Models\OffreEmploi;
+use App\Models\Poste;
+use App\Models\Role;
 use App\Models\Salaire;
 use Illuminate\View\View;
 
@@ -20,6 +22,9 @@ class DashboardController extends Controller
 {
     public function index(): View
     {
+        // ==========================================================
+        // 1. STATISTIQUES
+        // ==========================================================
         $stats = [
             'total_employes'    => Employe::count(),
             'employes_actifs'   => Employe::where('statut', 'actif')->count(),
@@ -30,10 +35,16 @@ class DashboardController extends Controller
 
         $masseSalariale = Salaire::where('statut', 'actif')->sum('salaire_base');
 
+        // ==========================================================
+        // 2. RÉPARTITION PAR DÉPARTEMENT
+        // ==========================================================
         $repartitionDepartements = Departement::withCount('employes')
             ->orderByDesc('employes_count')
             ->get();
 
+        // ==========================================================
+        // 3. CONGÉS PAR MOIS
+        // ==========================================================
         $congesParMois = DemandeConge::selectRaw('MONTH(date_debut) as mois, COUNT(*) as total')
             ->whereYear('date_debut', now()->year)
             ->groupBy('mois')
@@ -46,6 +57,9 @@ class DashboardController extends Controller
             $congesParMoisComplet[$m] = $congesParMois[$m] ?? 0;
         }
 
+        // ==========================================================
+        // 4. ÉVOLUTION DE L'EFFECTIF
+        // ==========================================================
         $embauchesParMois = Employe::selectRaw('MONTH(date_embauche) as mois, COUNT(*) as total')
             ->whereYear('date_embauche', now()->year)
             ->groupBy('mois')
@@ -60,12 +74,18 @@ class DashboardController extends Controller
             $effectifParMois[$m] = $cumul;
         }
 
+        // ==========================================================
+        // 5. CONGÉS EN ATTENTE
+        // ==========================================================
         $congesEnAttente = DemandeConge::with(['employe', 'typeConge'])
             ->where('statut', 'en_attente')
             ->orderByDesc('created_at')
             ->take(5)
             ->get();
 
+        // ==========================================================
+        // 6. ACTIVITÉ RÉCENTE
+        // ==========================================================
         $activiteRecente = DemandeConge::with('employe')
             ->orderByDesc('created_at')
             ->take(5)
@@ -79,7 +99,11 @@ class DashboardController extends Controller
                 ];
             });
 
-        $notificationsNonLues = Notification::where('lue', false)->count();
+        // ==========================================================
+        // 7. NOTIFICATIONS NON LUES (valeur par défaut 0)
+        // ==========================================================
+        // ⚠️ Le système de notifications a été retiré, on met 0.
+        $notificationsNonLues = 0;
 
         return view('admin.dashboard', compact(
             'stats',
