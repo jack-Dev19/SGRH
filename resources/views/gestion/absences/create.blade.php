@@ -4,193 +4,236 @@
 
 @section('content')
 
-<div class="max-w-3xl mx-auto">
+<div class="max-w-3xl mx-auto px-4 py-8" x-data="{
+    employeOpen: false,
+    selectedEmploye: '{{ old('employe_id') }}',
+    employesList: {{ Js::from($employes->map(fn($e) => ['id' => (string)$e->id, 'nom' => $e->nom_complet . ' (' . $e->matricule . ')'])->values()) }},
+    get selectedEmployeName() {
+        if (!this.selectedEmploye) return '';
+        const e = this.employesList.find(e => e.id == this.selectedEmploye);
+        return e ? e.nom : '';
+    }
+}">
 
     {{-- Fil d'Ariane --}}
-    <div class="flex items-center gap-2 text-sm text-slate-500 mb-6">
-        <a href="{{ route('gestion.absences.index') }}" class="hover:text-purple-600 transition">Absences</a>
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
-        </svg>
-        <span class="font-semibold text-slate-700">Nouvelle absence</span>
+    <div class="flex items-center gap-2 text-sm text-purple-500 font-medium mb-6 px-2">
+        <a href="{{ route('gestion.absences.index') }}" class="hover:text-purple-700 transition-colors">Absences</a>
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+        <span class="text-purple-900 font-bold">Nouvelle</span>
     </div>
 
-    {{-- En-tête --}}
-    <div class="mb-6">
-        <h1 class="text-2xl md:text-3xl font-extrabold text-slate-900 mb-1">Nouvelle absence</h1>
-        <p class="text-sm text-slate-500">Enregistrez une absence manuellement.</p>
-    </div>
-
-    {{-- Formulaire --}}
-    <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
-
-        <div class="bg-gradient-to-r from-purple-600 to-pink-600 p-6 text-white">
-            <h2 class="text-lg font-extrabold">Informations de l'absence</h2>
-            <p class="text-purple-100 text-sm mt-1">Les champs marqués d'un * sont obligatoires.</p>
+    {{-- Carte principale --}}
+    <div class="relative bg-white rounded-[40px] shadow-[0_20px_60px_-15px_rgba(147,51,234,0.3)] overflow-hidden">
+        
+        {{-- En-tête --}}
+        <div class="px-8 pt-10 pb-6 text-center">
+            <h1 class="text-3xl font-extrabold text-purple-700 tracking-wide uppercase">Nouvelle Absence</h1>
+            <p class="text-sm font-semibold text-slate-400 tracking-widest uppercase mt-1">Enregistrer manuellement</p>
+            <p class="text-xs text-purple-500 mt-3 bg-purple-50 inline-block px-3 py-1 rounded-full border border-purple-100">
+                Les champs marqués d'un * sont obligatoires
+            </p>
         </div>
 
-        <form action="{{ route('gestion.absences.store') }}" method="POST"
-              enctype="multipart/form-data" class="p-6 space-y-6">
+        {{-- Formulaire --}}
+        <form action="{{ route('gestion.absences.store') }}" method="POST" enctype="multipart/form-data" class="px-8 pb-10 relative z-10">
             @csrf
 
-            {{-- Erreurs globales --}}
-            @if ($errors->any())
-                <div class="bg-red-50 border border-red-200 text-red-700 text-sm p-4 rounded-xl">
-                    <p class="font-bold mb-2">Veuillez corriger les erreurs suivantes :</p>
+            {{-- Champ caché pour la soumission --}}
+            <input type="hidden" name="employe_id" x-model="selectedEmploye">
+
+            @if($errors->any())
+                <div class="mb-6 bg-red-50 border border-red-100 text-red-600 rounded-2xl p-4 text-sm">
+                    <p class="font-bold mb-1">Erreurs :</p>
                     <ul class="list-disc list-inside space-y-1">
-                        @foreach ($errors->all() as $error)
+                        @foreach($errors->all() as $error)
                             <li>{{ $error }}</li>
                         @endforeach
                     </ul>
                 </div>
             @endif
 
-            {{-- SECTION : Employé --}}
-            <div>
-                <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wide mb-3">Employé concerné</h3>
+            <div class="space-y-6">
+                
+                {{-- SECTION 1 : EMPLOYÉ & PÉRIODE --}}
+                <div>
+                    <h2 class="text-xs font-bold text-purple-400 uppercase tracking-widest mb-4 flex items-center gap-2">
+                        <span class="flex items-center justify-center w-6 h-6 rounded-full bg-purple-100 text-purple-600 text-[10px]">1</span>
+                        Employé & Période
+                    </h2>
 
-                <div class="relative">
-                    <div class="absolute left-4 top-1/2 -translate-y-1/2 text-purple-600 pointer-events-none">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                    <div class="space-y-3">
+                        
+                        {{-- ⭐ EMPLOYÉ DROPDOWN PRO ⭐ --}}
+                        <div class="relative" @click.away="employeOpen = false">
+                            <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none z-10">
+                                <svg class="h-5 w-5 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+                            </div>
+                            
+                            <button type="button" @click="employeOpen = !employeOpen" 
+                                class="relative w-full pl-12 pr-10 py-3.5 bg-white border-2 border-purple-200 text-left text-purple-900 text-sm rounded-full focus:outline-none focus:ring-4 focus:ring-purple-500/20 focus:border-purple-500 transition-all hover:border-purple-300">
+                                <span x-text="selectedEmployeName || '— Sélectionner un employé * —'" :class="!selectedEmployeName ? 'text-purple-300' : 'font-medium'"></span>
+                                <span class="absolute inset-y-0 right-0 pr-5 flex items-center pointer-events-none">
+                                    <svg class="h-4 w-4 text-purple-500 transition-transform duration-200" :class="employeOpen ? 'rotate-180' : ''" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+                                </span>
+                            </button>
+
+                            <div x-show="employeOpen" x-transition class="absolute z-50 mt-2 w-full bg-white rounded-3xl shadow-[0_25px_60px_-15px_rgba(147,51,234,0.5)] ring-1 ring-purple-100 overflow-hidden" style="display: none;">
+                                <div class="bg-gradient-to-r from-purple-50 to-pink-50 px-5 py-3 border-b border-purple-100/50"><p class="text-[10px] font-black text-purple-400 uppercase tracking-widest">Employés</p></div>
+                                <ul class="max-h-64 overflow-y-auto p-2 space-y-1 custom-scrollbar">
+                                    <template x-for="emp in employesList" :key="emp.id">
+                                        <li @click="selectedEmploye = emp.id; employeOpen = false" class="group flex items-center justify-between px-4 py-2.5 rounded-2xl cursor-pointer transition-all duration-150" :class="selectedEmploye == emp.id ? 'bg-purple-600 text-white shadow-md shadow-purple-500/30' : 'hover:bg-purple-50 text-purple-900'">
+                                            <span class="text-sm font-semibold" x-text="emp.nom"></span>
+                                            <div :class="selectedEmploye == emp.id ? 'bg-white/20' : 'bg-transparent group-hover:bg-purple-100'" class="w-6 h-6 rounded-full flex items-center justify-center transition-colors"><svg x-show="selectedEmploye == emp.id" class="h-3.5 w-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></div>
+                                        </li>
+                                    </template>
+                                </ul>
+                            </div>
+                        </div>
+
+                        {{-- Dates --}}
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            <div class="relative">
+                                <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                                    <svg class="h-5 w-5 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                                </div>
+                                <input type="date" name="date_debut" required value="{{ old('date_debut', now()->toDateString()) }}"
+                                    class="w-full pl-12 pr-4 py-3.5 bg-white border-2 border-purple-200 text-purple-900 text-sm rounded-full focus:ring-4 focus:ring-purple-500/20 focus:border-purple-500 transition-all outline-none">
+                            </div>
+                            <div class="relative">
+                                <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                                    <svg class="h-5 w-5 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                                </div>
+                                <input type="date" name="date_fin" required value="{{ old('date_fin', now()->toDateString()) }}"
+                                    class="w-full pl-12 pr-4 py-3.5 bg-white border-2 border-purple-200 text-purple-900 text-sm rounded-full focus:ring-4 focus:ring-purple-500/20 focus:border-purple-500 transition-all outline-none">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {{-- SECTION 2 : DÉTAILS --}}
+                <div class="pt-2">
+                    <h2 class="text-xs font-bold text-purple-400 uppercase tracking-widest mb-4 flex items-center gap-2">
+                        <span class="flex items-center justify-center w-6 h-6 rounded-full bg-purple-100 text-purple-600 text-[10px]">2</span>
+                        Détails
+                    </h2>
+
+                    <div class="space-y-3">
+                        {{-- Motif --}}
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                                <svg class="h-5 w-5 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/></svg>
+                            </div>
+                            <input type="text" name="motif" required maxlength="150" value="{{ old('motif') }}" placeholder="Motif (ex: Maladie, Mission…) *"
+                                class="w-full pl-12 pr-4 py-3.5 bg-white border-2 border-purple-200 text-purple-900 text-sm rounded-full focus:ring-4 focus:ring-purple-500/20 focus:border-purple-500 placeholder-purple-300 transition-all outline-none">
+                        </div>
+
+                        {{-- Description --}}
+                        <div class="relative">
+                            <div class="absolute top-4 left-0 pl-4 flex items-start pointer-events-none">
+                                <svg class="h-5 w-5 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h7"/></svg>
+                            </div>
+                            <textarea name="description" rows="3" maxlength="500" placeholder="Description détaillée (optionnel)…"
+                                class="w-full pl-12 pr-4 py-3.5 bg-white border-2 border-purple-200 text-purple-900 text-sm rounded-3xl focus:ring-4 focus:ring-purple-500/20 focus:border-purple-500 placeholder-purple-300 transition-all outline-none resize-none">{{ old('description') }}</textarea>
+                        </div>
+
+                        {{-- Justificatif --}}
+                        <div class="relative">
+                            <input type="file" name="justificatif" accept=".pdf,.jpg,.jpeg,.png"
+                                class="w-full text-sm text-slate-500 file:mr-4 file:py-3.5 file:px-5 file:rounded-full file:border-0 file:bg-purple-600 file:text-white file:font-bold file:text-xs file:cursor-pointer hover:file:bg-purple-700 border-2 border-purple-200 rounded-full bg-white transition-all cursor-pointer focus:outline-none focus:ring-4 focus:ring-purple-500/20">
+                            <p class="text-[11px] text-purple-400 pl-4 mt-1">Formats : PDF, JPG, PNG. Taille max : 2 Mo.</p>
+                        </div>
+                    </div>
+                </div>
+
+                {{-- SECTION 3 : STATUT INITIAL --}}
+                <div class="pt-2">
+                    <h2 class="text-xs font-bold text-purple-400 uppercase tracking-widest mb-4 flex items-center gap-2">
+                        <span class="flex items-center justify-center w-6 h-6 rounded-full bg-purple-100 text-purple-600 text-[10px]">3</span>
+                        Statut initial
+                    </h2>
+
+                    <div class="space-y-2">
+                        {{-- En attente --}}
+                        <label class="flex items-start gap-3 p-4 rounded-2xl border-2 cursor-pointer transition-all"
+                            :class="statut === 'en_attente' ? 'border-purple-500 bg-purple-50' : 'border-slate-200 bg-slate-50 hover:bg-slate-100'"
+                            x-data="{ statut: '{{ old('statut', 'en_attente') }}' }" @click="statut = 'en_attente'">
+                            <input type="radio" name="statut" value="en_attente" {{ old('statut', 'en_attente') === 'en_attente' ? 'checked' : '' }} class="mt-1 text-purple-600 focus:ring-purple-500">
+                            <div>
+                                <p class="text-sm font-bold text-slate-800">En attente de validation</p>
+                                <p class="text-xs text-slate-500 mt-0.5">Le statut sera mis à jour lors de la validation.</p>
+                            </div>
+                        </label>
+
+                        {{-- Justifiée --}}
+                        <label class="flex items-start gap-3 p-4 rounded-2xl border-2 cursor-pointer transition-all"
+                            :class="statut === 'justifie' ? 'border-emerald-500 bg-emerald-50' : 'border-slate-200 bg-slate-50 hover:bg-slate-100'"
+                            x-data="{ statut: '{{ old('statut', 'en_attente') }}' }" @click="statut = 'justifie'">
+                            <input type="radio" name="statut" value="justifie" {{ old('statut') === 'justifie' ? 'checked' : '' }} class="mt-1 text-emerald-600 focus:ring-emerald-500">
+                            <div>
+                                <p class="text-sm font-bold text-slate-800">Justifiée directement</p>
+                                <p class="text-xs text-slate-500 mt-0.5">Le RH valide immédiatement l'absence.</p>
+                            </div>
+                        </label>
+
+                        {{-- Non justifiée --}}
+                        <label class="flex items-start gap-3 p-4 rounded-2xl border-2 cursor-pointer transition-all"
+                            :class="statut === 'non_justifie' ? 'border-red-500 bg-red-50' : 'border-slate-200 bg-slate-50 hover:bg-slate-100'"
+                            x-data="{ statut: '{{ old('statut', 'en_attente') }}' }" @click="statut = 'non_justifie'">
+                            <input type="radio" name="statut" value="non_justifie" {{ old('statut') === 'non_justifie' ? 'checked' : '' }} class="mt-1 text-red-600 focus:ring-red-500">
+                            <div>
+                                <p class="text-sm font-bold text-slate-800">Non justifiée</p>
+                                <p class="text-xs text-slate-500 mt-0.5">Absence sans motif valable (impact sur la paie).</p>
+                            </div>
+                        </label>
+
+                        {{-- Autorisée --}}
+                        <label class="flex items-start gap-3 p-4 rounded-2xl border-2 cursor-pointer transition-all"
+                            :class="statut === 'autorise' ? 'border-purple-500 bg-purple-50' : 'border-slate-200 bg-slate-50 hover:bg-slate-100'"
+                            x-data="{ statut: '{{ old('statut', 'en_attente') }}' }" @click="statut = 'autorise'">
+                            <input type="radio" name="statut" value="autorise" {{ old('statut') === 'autorise' ? 'checked' : '' }} class="mt-1 text-purple-600 focus:ring-purple-500">
+                            <div>
+                                <p class="text-sm font-bold text-slate-800">Autorisée</p>
+                                <p class="text-xs text-slate-500 mt-0.5">Autorisation exceptionnelle accordée.</p>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+                {{-- Actions --}}
+                <div class="pt-6 pb-2 space-y-3">
+                    <button type="submit"
+                        class="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white text-sm font-bold py-4 rounded-full shadow-[0_10px_20px_-10px_rgba(147,51,234,0.6)] transition-all hover:-translate-y-0.5 outline-none focus:ring-4 focus:ring-purple-500/30">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
                         </svg>
-                    </div>
-                    <select name="employe_id" required
-                        class="w-full pl-12 pr-4 py-3.5 rounded-xl border-2 border-slate-200 bg-slate-50 text-sm text-slate-700 focus:bg-white focus:border-purple-500 focus:outline-none focus:ring-4 focus:ring-purple-100 transition">
-                        <option value="">— Sélectionner un employé —</option>
-                        @foreach($employes as $emp)
-                            <option value="{{ $emp->id }}" {{ old('employe_id') === $emp->id ? 'selected' : '' }}>
-                                {{ $emp->nom_complet }} ({{ $emp->matricule }})
-                            </option>
-                        @endforeach
-                    </select>
+                        ENREGISTRER L'ABSENCE
+                    </button>
+                    
+                    <a href="{{ route('gestion.absences.index') }}"
+                        class="block w-full text-center text-xs font-bold text-purple-400 hover:text-purple-600 py-2 transition-colors">
+                        Annuler et retourner à la liste
+                    </a>
                 </div>
-            </div>
-
-            {{-- SECTION : Période --}}
-            <div>
-                <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wide mb-3">Période</h3>
-
-                <div class="grid grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-xs font-bold text-slate-600 uppercase tracking-wide mb-2">
-                            Date début <span class="text-red-500">*</span>
-                        </label>
-                        <input type="date" name="date_debut" required
-                            value="{{ old('date_debut', now()->toDateString()) }}"
-                            class="w-full px-4 py-3 rounded-xl border-2 border-slate-200 bg-slate-50 text-sm focus:bg-white focus:border-purple-500 focus:outline-none">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-bold text-slate-600 uppercase tracking-wide mb-2">
-                            Date fin <span class="text-red-500">*</span>
-                        </label>
-                        <input type="date" name="date_fin" required
-                            value="{{ old('date_fin', now()->toDateString()) }}"
-                            class="w-full px-4 py-3 rounded-xl border-2 border-slate-200 bg-slate-50 text-sm focus:bg-white focus:border-purple-500 focus:outline-none">
-                    </div>
-                </div>
-            </div>
-
-            {{-- SECTION : Détails --}}
-            <div>
-                <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wide mb-3">Détails</h3>
-
-                <div class="space-y-4">
-                    {{-- Motif --}}
-                    <div>
-                        <label class="block text-xs font-bold text-slate-600 uppercase tracking-wide mb-2">
-                            Motif <span class="text-red-500">*</span>
-                        </label>
-                        <input type="text" name="motif" required maxlength="150"
-                            value="{{ old('motif') }}"
-                            placeholder="Ex : Maladie, Mission, Raison personnelle..."
-                            class="w-full px-4 py-3 rounded-xl border-2 border-slate-200 bg-slate-50 text-sm focus:bg-white focus:border-purple-500 focus:outline-none">
-                    </div>
-
-                    {{-- Description --}}
-                    <div>
-                        <label class="block text-xs font-bold text-slate-600 uppercase tracking-wide mb-2">
-                            Description détaillée
-                        </label>
-                        <textarea name="description" rows="3" maxlength="500"
-                            placeholder="Détails complémentaires (optionnel)..."
-                            class="w-full px-4 py-3 rounded-xl border-2 border-slate-200 bg-slate-50 text-sm focus:bg-white focus:border-purple-500 focus:outline-none resize-none">{{ old('description') }}</textarea>
-                    </div>
-
-                    {{-- Justificatif --}}
-                    <div>
-                        <label class="block text-xs font-bold text-slate-600 uppercase tracking-wide mb-2">
-                            Justificatif (PDF, JPG, PNG — max 2 Mo)
-                        </label>
-                        <input type="file" name="justificatif" accept=".pdf,.jpg,.jpeg,.png"
-                            class="w-full px-4 py-3 rounded-xl border-2 border-dashed border-slate-300 bg-slate-50 text-sm focus:bg-white focus:border-purple-500 focus:outline-none file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:bg-purple-100 file:text-purple-700 file:font-semibold file:text-xs hover:file:bg-purple-200">
-                        <p class="text-xs text-slate-400 mt-1">Formats acceptés : PDF, JPG, PNG. Taille maximale : 2 Mo.</p>
-                    </div>
-                </div>
-            </div>
-
-            {{-- SECTION : Statut initial --}}
-            <div>
-                <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wide mb-3">Statut initial</h3>
-
-                <div class="bg-blue-50 border border-blue-200 rounded-xl p-4">
-                    <label class="flex items-start gap-3 cursor-pointer">
-                        <input type="radio" name="statut" value="en_attente" checked class="mt-1">
-                        <div>
-                            <p class="font-semibold text-blue-800">En attente de validation</p>
-                            <p class="text-xs text-blue-600">Le statut sera mis à jour lors de la validation (Approuver / Refuser).</p>
-                        </div>
-                    </label>
-                </div>
-
-                <div class="mt-3 bg-emerald-50 border border-emerald-200 rounded-xl p-4">
-                    <label class="flex items-start gap-3 cursor-pointer">
-                        <input type="radio" name="statut" value="justifie" {{ old('statut') === 'justifie' ? 'checked' : '' }} class="mt-1">
-                        <div>
-                            <p class="font-semibold text-emerald-800">Justifiée directement</p>
-                            <p class="text-xs text-emerald-600">Le RH valide immédiatement l'absence (justifiée).</p>
-                        </div>
-                    </label>
-                </div>
-
-                <div class="mt-3 bg-red-50 border border-red-200 rounded-xl p-4">
-                    <label class="flex items-start gap-3 cursor-pointer">
-                        <input type="radio" name="statut" value="non_justifie" {{ old('statut') === 'non_justifie' ? 'checked' : '' }} class="mt-1">
-                        <div>
-                            <p class="font-semibold text-red-800">Non justifiée</p>
-                            <p class="text-xs text-red-600">Absence sans motif valable (impact sur la paie possible).</p>
-                        </div>
-                    </label>
-                </div>
-
-                <div class="mt-3 bg-purple-50 border border-purple-200 rounded-xl p-4">
-                    <label class="flex items-start gap-3 cursor-pointer">
-                        <input type="radio" name="statut" value="autorise" {{ old('statut') === 'autorise' ? 'checked' : '' }} class="mt-1">
-                        <div>
-                            <p class="font-semibold text-purple-800">Autorisée</p>
-                            <p class="text-xs text-purple-600">Autorisation exceptionnelle accordée.</p>
-                        </div>
-                    </label>
-                </div>
-            </div>
-
-            {{-- Boutons --}}
-            <div class="flex items-center justify-end gap-3 pt-6 border-t border-slate-100">
-                <a href="{{ route('gestion.absences.index') }}"
-                    class="px-5 py-2.5 rounded-xl text-sm font-medium text-slate-600 hover:bg-slate-100 transition">
-                    Annuler
-                </a>
-                <button type="submit"
-                    class="inline-flex items-center gap-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white text-sm font-bold px-6 py-2.5 rounded-xl transition shadow-lg shadow-purple-600/30">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-                    </svg>
-                    Enregistrer l'absence
-                </button>
             </div>
         </form>
-    </div>
 
+        {{-- Vagues décoratives --}}
+        <div class="absolute bottom-0 left-0 right-0 pointer-events-none overflow-hidden h-40">
+            <svg viewBox="0 0 500 150" preserveAspectRatio="none" class="w-full h-full">
+                <path fill="rgba(167, 139, 250, 0.4)" d="M0,100 C150,150 350,50 500,100 L500,150 L0,150 Z"></path>
+                <path fill="rgba(139, 92, 246, 0.8)" d="M0,120 C150,170 350,70 500,120 L500,150 L0,150 Z"></path>
+                <path fill="#7C3AED" d="M0,140 C150,190 350,90 500,140 L500,150 L0,150 Z"></path>
+            </svg>
+        </div>
+    </div>
 </div>
+
+{{-- CSS personnalisé pour la scrollbar --}}
+<style>
+    .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+    .custom-scrollbar::-webkit-scrollbar-track { background: transparent; margin: 8px 0; }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background-color: #d8b4fe; border-radius: 10px; }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover { background-color: #a855f7; }
+</style>
 
 @endsection
