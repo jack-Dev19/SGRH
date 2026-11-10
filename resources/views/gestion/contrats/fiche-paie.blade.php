@@ -44,50 +44,60 @@
         html, body {
             font-family: DejaVu Sans, sans-serif;
             font-size: 10px;
-            line-height: 1.5;
-            color: #1e293b;
+            line-height: 1.6;
+            color: #0f172a;
+            background: #ffffff;
         }
 
         .page {
-            padding: 15mm 14mm 12mm 14mm;
+            padding: 14mm 14mm 12mm 14mm;
+            position: relative;
         }
 
         /* ============ HEADER ============ */
         .header {
-            display: table;
             width: 100%;
-            margin-bottom: 14px;
+            margin-bottom: 12px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #e2e8f0;
         }
 
-        .header-left, .header-right {
-            display: table-cell;
-            vertical-align: top;
+        .header-table {
+            width: 100%;
+            border-collapse: collapse;
         }
 
-        .header-left { width: 55%; }
-        .header-right { width: 45%; text-align: right; }
+        .header-table td {
+            vertical-align: middle;
+        }
+
+        .brand-block {
+            display: inline-block;
+            vertical-align: middle;
+        }
 
         .logo-icon {
-            width: 40px;
-            height: 40px;
+            width: 42px;
+            height: 42px;
             background-color: #7c3aed;
             border-radius: 10px;
             display: inline-block;
             vertical-align: middle;
             text-align: center;
-            line-height: 40px;
+            line-height: 42px;
         }
 
         .logo-icon-text {
             color: white;
-            font-size: 18px;
+            font-size: 16px;
             font-weight: bold;
+            letter-spacing: 0.5px;
         }
 
         .brand-name {
             display: inline-block;
             vertical-align: middle;
-            margin-left: 8px;
+            margin-left: 10px;
         }
 
         .brand-title {
@@ -98,36 +108,35 @@
         }
 
         .brand-sub {
-            font-size: 7.5px;
+            font-size: 8px;
             color: #64748b;
             text-transform: uppercase;
             letter-spacing: 1px;
+            margin-top: 1px;
         }
 
         .header-right {
             font-size: 8.5px;
             color: #64748b;
-            line-height: 1.6;
+            line-height: 1.5;
+            text-align: right;
         }
 
         .header-right strong {
-            color: #7c3aed;
-        }
-
-        .top-banner {
-            height: 4px;
-            background: linear-gradient(90deg, #7c3aed 0%, #ec4899 100%);
-            margin-bottom: 18px;
-            border-radius: 2px;
+            color: #1e293b;
+            font-weight: 600;
         }
 
         /* ============ TITRE ============ */
         .title-block {
             text-align: center;
-            margin-bottom: 20px;
-            padding: 12px 0;
-            border-top: 2px solid #1e293b;
-            border-bottom: 2px solid #1e293b;
+            margin: 16px 0 18px 0;
+            padding: 12px 20px;
+            background-color: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-left: 4px solid #7c3aed;
+            border-right: 4px solid #7c3aed;
+            border-radius: 4px;
         }
 
         .title-block .titre {
@@ -135,7 +144,7 @@
             font-weight: bold;
             color: #1e293b;
             text-transform: uppercase;
-            letter-spacing: 2px;
+            letter-spacing: 3px;
         }
 
         .title-block .periode {
@@ -152,10 +161,12 @@
             width: 100%;
             border-collapse: collapse;
             margin-bottom: 18px;
+            border-radius: 4px;
+            overflow: hidden;
         }
 
         .info-grid td {
-            padding: 6px 10px;
+            padding: 7px 10px;
             border: 1px solid #e2e8f0;
             font-size: 9.5px;
             vertical-align: top;
@@ -164,8 +175,8 @@
         .info-grid .label {
             background-color: #f8fafc;
             font-weight: bold;
-            color: #475569;
-            width: 22%;
+            color: #64748b;
+            width: 20%;
             text-transform: uppercase;
             font-size: 8px;
             letter-spacing: 0.5px;
@@ -174,44 +185,110 @@
         .info-grid .value {
             color: #1e293b;
             font-weight: 500;
+            width: 30%;
         }
 
-        /* ============ TABLEAU PAIE ============ */
-        .section-title {
-            font-size: 10px;
-            font-weight: bold;
-            color: white;
-            background-color: #7c3aed;
-            padding: 6px 10px;
-            text-transform: uppercase;
-            letter-spacing: 1.2px;
-            margin-bottom: 0;
-            border-radius: 4px 4px 0 0;
-        }
-
-        .pay-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-bottom: 16px;
+        /* ============ SECTION ============ */
+        .section-block {
+            margin-bottom: 14px;
             page-break-inside: avoid;
         }
 
-        .pay-table td {
-            padding: 6px 10px;
-            border: 1px solid #e2e8f0;
+        .section-header {
+            display: table;
+            width: 100%;
+            background-color: #7c3aed;
+            border-radius: 6px 6px 0 0;
+            padding: 0;
+        }
+
+        .section-header-left {
+            display: table-cell;
+            padding: 8px 12px;
+            vertical-align: middle;
+        }
+
+        .section-header-icon {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            background-color: rgba(255, 255, 255, 0.2);
+            border-radius: 5px;
+            text-align: center;
+            line-height: 20px;
             font-size: 10px;
+            color: #ffffff;
+            font-weight: bold;
+            vertical-align: middle;
+            margin-right: 6px;
+        }
+
+        .section-header-title {
+            display: inline-block;
+            vertical-align: middle;
+            font-size: 10px;
+            font-weight: bold;
+            color: #ffffff;
+            text-transform: uppercase;
+            letter-spacing: 1.2px;
+        }
+
+        .section-header-right {
+            display: table-cell;
+            padding: 8px 12px;
+            text-align: right;
+            font-size: 8px;
+            color: rgba(255, 255, 255, 0.8);
+            font-weight: 500;
+            vertical-align: middle;
+            letter-spacing: 0.3px;
+        }
+
+        /* ============ TABLE PAIE ============ */
+        .pay-table {
+            width: 100%;
+            border-collapse: collapse;
+            border-left: 1px solid #e2e8f0;
+            border-right: 1px solid #e2e8f0;
+            border-bottom: 1px solid #e2e8f0;
+            border-radius: 0 0 6px 6px;
+            overflow: hidden;
+        }
+
+        .pay-table td {
+            padding: 7px 12px;
+            border-bottom: 1px solid #f1f5f9;
+            font-size: 10px;
+            vertical-align: middle;
+        }
+
+        .pay-table tr:last-child td {
+            border-bottom: none;
         }
 
         .pay-table .label {
             color: #475569;
-            width: 65%;
+            width: 70%;
+        }
+
+        .pay-table .label .sub-label {
+            color: #94a3b8;
+            font-size: 8.5px;
+            font-weight: normal;
+            display: block;
+            margin-top: 1px;
         }
 
         .pay-table .value {
             text-align: right;
             font-weight: 600;
             color: #1e293b;
-            width: 35%;
+            width: 30%;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .pay-table tr.row-alt td {
+            background-color: #fafafa;
         }
 
         .pay-table tr.subtotal td {
@@ -219,6 +296,13 @@
             font-weight: bold;
             color: #1e293b;
             border-top: 2px solid #cbd5e1;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .pay-table tr.subtotal td.label {
+            font-size: 9.5px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
 
         .pay-table tr.total td {
@@ -230,6 +314,12 @@
             border-bottom: 2px solid #7c3aed;
         }
 
+        .pay-table tr.total td.label {
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-size: 10px;
+        }
+
         .pay-table tr.negatif .value {
             color: #dc2626;
         }
@@ -238,8 +328,8 @@
         .net-box {
             background: linear-gradient(135deg, #ede9fe 0%, #fce7f3 100%);
             border: 2px solid #7c3aed;
-            border-radius: 8px;
-            padding: 14px 18px;
+            border-radius: 10px;
+            padding: 16px 20px;
             margin: 18px 0;
             text-align: center;
         }
@@ -248,24 +338,33 @@
             font-size: 9px;
             color: #7c3aed;
             text-transform: uppercase;
-            letter-spacing: 2px;
-            margin-bottom: 4px;
+            letter-spacing: 3px;
+            margin-bottom: 6px;
             font-weight: bold;
         }
 
         .net-box .net-value {
-            font-size: 22px;
+            font-size: 24px;
             font-weight: bold;
             color: #1e293b;
             letter-spacing: 0.5px;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .net-box .net-sub {
+            font-size: 8px;
+            color: #7c3aed;
+            margin-top: 4px;
+            font-style: italic;
         }
 
         /* ============ SIGNATURES ============ */
         .signatures-table {
             width: 100%;
             border-collapse: separate;
-            border-spacing: 20px 0;
-            margin-top: 30px;
+            border-spacing: 15px 0;
+            margin-top: 24px;
+            page-break-inside: avoid;
         }
 
         .signatures-table td {
@@ -274,9 +373,9 @@
         }
 
         .signature-box {
-            border: 1px solid #cbd5e1;
-            border-radius: 6px;
-            padding: 10px 12px;
+            border: 1.5px dashed #cbd5e1;
+            border-radius: 8px;
+            padding: 10px 14px;
             min-height: 90px;
             background-color: #fefefe;
         }
@@ -286,10 +385,10 @@
             font-weight: bold;
             color: #7c3aed;
             text-transform: uppercase;
-            letter-spacing: 1px;
+            letter-spacing: 1.2px;
             margin-bottom: 6px;
             padding-bottom: 5px;
-            border-bottom: 1px dashed #cbd5e1;
+            border-bottom: 1px dashed #e2e8f0;
         }
 
         .signature-line {
@@ -303,34 +402,35 @@
 
         /* ============ FOOTER ============ */
         .footer {
-            margin-top: 25px;
-            padding-top: 10px;
+            margin-top: 24px;
+            padding-top: 12px;
             border-top: 1px solid #e2e8f0;
             text-align: center;
             font-size: 7.5px;
             color: #94a3b8;
-            line-height: 1.6;
+            line-height: 1.7;
         }
 
         .footer-brand {
             font-weight: bold;
             color: #7c3aed;
             font-size: 8.5px;
-            letter-spacing: 1px;
-            margin-bottom: 2px;
+            letter-spacing: 1.5px;
+            margin-bottom: 3px;
         }
 
         /* ============ WATERMARK ============ */
         .watermark {
             position: fixed;
-            top: 48%;
+            top: 50%;
             left: 50%;
-            transform: translate(-50%, -50%) rotate(-40deg);
-            font-size: 85px;
+            transform: translate(-50%, -50%) rotate(-35deg);
+            font-size: 90px;
             font-weight: bold;
             color: rgba(124, 58, 237, 0.04);
             z-index: -1;
             white-space: nowrap;
+            letter-spacing: 6px;
         }
 
         .text-center { text-align: center; }
@@ -349,27 +449,28 @@
         {{-- ========================================================= --}}
         {{-- EN-TÊTE                                                    --}}
         {{-- ========================================================= --}}
-        <table class="header">
-            <tr>
-                <td class="header-left">
-                    <div class="logo-icon">
-                        <span class="logo-icon-text">DA</span>
-                    </div>
-                    <div class="brand-name">
-                        <div class="brand-title">{{ $nomEntreprise }}</div>
-                        <div class="brand-sub">Solutions Digitales · Madagascar</div>
-                    </div>
-                </td>
-                <td class="header-right">
-                    <strong>{{ $adresseEntreprise }}</strong><br>
-                    Tél : {{ $telephoneEntreprise }}<br>
-                    {{ $emailEntreprise }}<br>
-                    NIF : {{ $nifEntreprise }} · STAT : {{ $statEntreprise }}
-                </td>
-            </tr>
-        </table>
-
-        <div class="top-banner"></div>
+        <div class="header">
+            <table class="header-table">
+                <tr>
+                    <td style="width: 55%;">
+                        <div class="logo-icon">
+                            <span class="logo-icon-text">DA</span>
+                        </div>
+                        <div class="brand-name">
+                            <div class="brand-title">{{ $nomEntreprise }}</div>
+                            <div class="brand-sub">Solutions Digitales · Madagascar</div>
+                        </div>
+                    </td>
+                    <td class="header-right" style="width: 45%;">
+                        <strong>{{ $adresseEntreprise }}</strong><br>
+                        Tél : {{ $telephoneEntreprise }}<br>
+                        {{ $emailEntreprise }}<br>
+                        NIF : {{ $nifEntreprise }}<br>
+                        STAT : {{ $statEntreprise }}
+                    </td>
+                </tr>
+            </table>
+        </div>
 
         {{-- ========================================================= --}}
         {{-- TITRE                                                      --}}
@@ -412,68 +513,82 @@
         </table>
 
         {{-- ========================================================= --}}
-        {{-- GAINS                                                      --}}
+        {{-- 1. GAINS                                                   --}}
         {{-- ========================================================= --}}
-        <div class="section-title">1. Éléments de rémunération (Gains)</div>
-        <table class="pay-table">
-            <tr>
-                <td class="label">Salaire de base</td>
-                <td class="value">{{ $fmt($salaireBase ?? 0) }}</td>
-            </tr>
-            <tr>
-                <td class="label">
-                    Prime d'ancienneté
-                    <span style="color: #94a3b8; font-size: 8.5px;">
-                        ({{ $ancienneteAnnees }} an(s) × 1% = {{ number_format($tauxAnciennete * 100, 0) }}%)
-                    </span>
-                </td>
-                <td class="value">{{ $fmt($primeAnciennete ?? 0) }}</td>
-            </tr>
-            <tr>
-                <td class="label">Prime de transport</td>
-                <td class="value">{{ $fmt($primeTransport ?? 0) }}</td>
-            </tr>
-            <tr>
-                <td class="label">Prime de logement</td>
-                <td class="value">{{ $fmt($primeLogement ?? 0) }}</td>
-            </tr>
-            <tr class="subtotal">
-                <td class="label">TOTAL BRUT</td>
-                <td class="value">{{ $fmt($salaireBrut ?? 0) }}</td>
-            </tr>
-        </table>
+        <div class="section-block">
+            <div class="section-header">
+                <div class="section-header-left">
+                    <span class="section-header-icon">1</span>
+                    <span class="section-header-title">Éléments de rémunération</span>
+                </div>
+                <div class="section-header-right">Gains</div>
+            </div>
+            <table class="pay-table">
+                <tr>
+                    <td class="label">Salaire de base</td>
+                    <td class="value">{{ $fmt($salaireBase ?? 0) }}</td>
+                </tr>
+                <tr class="row-alt">
+                    <td class="label">
+                        Prime d'ancienneté
+                        <span class="sub-label">({{ $ancienneteAnnees }} an(s) × 1% = {{ number_format($tauxAnciennete * 100, 0) }}%)</span>
+                    </td>
+                    <td class="value">{{ $fmt($primeAnciennete ?? 0) }}</td>
+                </tr>
+                <tr>
+                    <td class="label">Prime de transport</td>
+                    <td class="value">{{ $fmt($primeTransport ?? 0) }}</td>
+                </tr>
+                <tr class="row-alt">
+                    <td class="label">Prime de logement</td>
+                    <td class="value">{{ $fmt($primeLogement ?? 0) }}</td>
+                </tr>
+                <tr class="subtotal">
+                    <td class="label">Total brut</td>
+                    <td class="value">{{ $fmt($salaireBrut ?? 0) }}</td>
+                </tr>
+            </table>
+        </div>
 
         {{-- ========================================================= --}}
-        {{-- RETENUES                                                   --}}
+        {{-- 2. RETENUES                                                --}}
         {{-- ========================================================= --}}
-        <div class="section-title">2. Retenues salariales</div>
-        <table class="pay-table">
-            <tr class="negatif">
-                <td class="label">
-                    CNAPS salarié
-                    <span style="color: #94a3b8; font-size: 8.5px;">(1%)</span>
-                </td>
-                <td class="value">- {{ $fmt($cnapsSalarie ?? 0) }}</td>
-            </tr>
-            <tr class="negatif">
-                <td class="label">
-                    OSTIE salarié
-                    <span style="color: #94a3b8; font-size: 8.5px;">(1%)</span>
-                </td>
-                <td class="value">- {{ $fmt($ostieSalarie ?? 0) }}</td>
-            </tr>
-            <tr class="negatif">
-                <td class="label">
-                    IRSA
-                    <span style="color: #94a3b8; font-size: 8.5px;">(20% simplifié)</span>
-                </td>
-                <td class="value">- {{ $fmt($irsa ?? 0) }}</td>
-            </tr>
-            <tr class="subtotal">
-                <td class="label">TOTAL RETENUES</td>
-                <td class="value">- {{ $fmt($totalRetenues ?? 0) }}</td>
-            </tr>
-        </table>
+        <div class="section-block">
+            <div class="section-header">
+                <div class="section-header-left">
+                    <span class="section-header-icon">2</span>
+                    <span class="section-header-title">Retenues salariales</span>
+                </div>
+                <div class="section-header-right">Déductions</div>
+            </div>
+            <table class="pay-table">
+                <tr class="negatif">
+                    <td class="label">
+                        CNAPS salarié
+                        <span class="sub-label">(1%)</span>
+                    </td>
+                    <td class="value">- {{ $fmt($cnapsSalarie ?? 0) }}</td>
+                </tr>
+                <tr class="negatif row-alt">
+                    <td class="label">
+                        OSTIE salarié
+                        <span class="sub-label">(1%)</span>
+                    </td>
+                    <td class="value">- {{ $fmt($ostieSalarie ?? 0) }}</td>
+                </tr>
+                <tr class="negatif">
+                    <td class="label">
+                        IRSA
+                        <span class="sub-label">(20% simplifié)</span>
+                    </td>
+                    <td class="value">- {{ $fmt($irsa ?? 0) }}</td>
+                </tr>
+                <tr class="subtotal">
+                    <td class="label">Total retenues</td>
+                    <td class="value">- {{ $fmt($totalRetenues ?? 0) }}</td>
+                </tr>
+            </table>
+        </div>
 
         {{-- ========================================================= --}}
         {{-- NET À PAYER                                                --}}
@@ -481,36 +596,45 @@
         <div class="net-box">
             <div class="net-label">Net à payer</div>
             <div class="net-value">{{ $fmt($salaireNet ?? 0) }}</div>
+            <div class="net-sub">Salaire net après déductions salariales</div>
         </div>
 
         {{-- ========================================================= --}}
-        {{-- COTISATIONS PATRONALES                                     --}}
+        {{-- 3. CHARGES PATRONALES                                      --}}
         {{-- ========================================================= --}}
-        <div class="section-title">3. Charges patronales</div>
-        <table class="pay-table">
-            <tr>
-                <td class="label">
-                    CNAPS employeur
-                    <span style="color: #94a3b8; font-size: 8.5px;">(13%)</span>
-                </td>
-                <td class="value">{{ $fmt($cnapsEmployeur ?? 0) }}</td>
-            </tr>
-            <tr>
-                <td class="label">
-                    OSTIE employeur
-                    <span style="color: #94a3b8; font-size: 8.5px;">(5%)</span>
-                </td>
-                <td class="value">{{ $fmt($ostieEmployeur ?? 0) }}</td>
-            </tr>
-            <tr class="subtotal">
-                <td class="label">TOTAL CHARGES PATRONALES</td>
-                <td class="value">{{ $fmt($totalCotisationsPatronales ?? 0) }}</td>
-            </tr>
-            <tr class="total">
-                <td class="label">COÛT TOTAL EMPLOYEUR</td>
-                <td class="value">{{ $fmt($coutTotal ?? 0) }}</td>
-            </tr>
-        </table>
+        <div class="section-block">
+            <div class="section-header">
+                <div class="section-header-left">
+                    <span class="section-header-icon">3</span>
+                    <span class="section-header-title">Charges patronales</span>
+                </div>
+                <div class="section-header-right">Employeur</div>
+            </div>
+            <table class="pay-table">
+                <tr>
+                    <td class="label">
+                        CNAPS employeur
+                        <span class="sub-label">(13%)</span>
+                    </td>
+                    <td class="value">{{ $fmt($cnapsEmployeur ?? 0) }}</td>
+                </tr>
+                <tr class="row-alt">
+                    <td class="label">
+                        OSTIE employeur
+                        <span class="sub-label">(5%)</span>
+                    </td>
+                    <td class="value">{{ $fmt($ostieEmployeur ?? 0) }}</td>
+                </tr>
+                <tr class="subtotal">
+                    <td class="label">Total charges patronales</td>
+                    <td class="value">{{ $fmt($totalCotisationsPatronales ?? 0) }}</td>
+                </tr>
+                <tr class="total">
+                    <td class="label">Coût total employeur</td>
+                    <td class="value">{{ $fmt($coutTotal ?? 0) }}</td>
+                </tr>
+            </table>
+        </div>
 
         {{-- ========================================================= --}}
         {{-- SIGNATURES                                                 --}}
