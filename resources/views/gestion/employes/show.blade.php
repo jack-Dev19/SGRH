@@ -167,7 +167,7 @@
             {{-- RETOUR --}}
             {{-- ============================================= --}}
             <div class="mt-6 pt-6 border-t border-slate-100">
-                <a href="{{ route('gestion.employes.show', $employe) }}"
+                <a href="{{ route('gestion.employes.index', $employe) }}"
                     class="inline-flex items-center gap-2 text-sm font-medium text-slate-500 hover:text-purple-600 transition">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 17l-5-5m0 0l5-5m-5 5h12"/>

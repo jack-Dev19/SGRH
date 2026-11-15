@@ -19,9 +19,9 @@ return new class extends Migration
             // Description 
             $table->text('description')->nullable(); 
             // Score minimum 
-            $table->decimal('score_minimum', 4, 2); 
+            $table->decimal('score_minimum', 5, 2); 
             // Score maximum 
-            $table->decimal('score_maximum', 4, 2); 
+            $table->decimal('score_maximum', 5, 2); 
             // Ordre d'affichage 
             $table->unsignedInteger('ordre')->default(0); 
             // Statut 

@@ -128,6 +128,9 @@ Route::middleware('auth')->group(function () {
 
             // ---------- Employés ----------
             Route::resource('employes', EmployeController::class);
+            // Page des détails d'un employé
+            Route::get('employes/{employe}/details', [EmployeController::class, 'details'])
+                ->name('employes.details');
 
             Route::delete('employes/{employe}/supprimer-tout',
                 [EmployeController::class, 'supprimerTout'])

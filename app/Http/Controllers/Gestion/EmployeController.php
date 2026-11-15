@@ -80,6 +80,36 @@ class EmployeController extends Controller
         return view('gestion.employes.show', compact('employe', 'qrCode', 'statsPointages'));
     }
 
+    /**
+     * Afficher les détails complets d'un employé.
+     */
+    public function details(string $id): View
+    {
+        // Récupérer l'employé avec son département et son poste.
+        $employe = Employe::with(['departement', 'poste'])
+            ->findOrFail($id);
+
+        // Calculer les statistiques de pointage du mois actuel.
+        $statsPointages = [
+            'total_mois' => Pointage::where('employe_id', $employe->id)
+                ->whereMonth('date_heure', now()->month)
+                ->whereYear('date_heure', now()->year)
+                ->count(),
+
+            'retards_mois' => Pointage::where('employe_id', $employe->id)
+                ->whereMonth('date_heure', now()->month)
+                ->whereYear('date_heure', now()->year)
+                ->where('est_anomalie', true)
+                ->count(),
+        ];
+
+        // Afficher la nouvelle page de détails.
+        return view('gestion.employes.show-emp', compact(
+            'employe',
+            'statsPointages'
+        ));
+    }
+
     // =================================================================
     // CREATE — Formulaire de création
     // =================================================================
@@ -89,7 +119,9 @@ class EmployeController extends Controller
         $departements = Departement::orderBy('nom')->get();
 
         // ⭐ Uniquement les postes actifs (avec departement_id pour le JS)
-        $postes = Poste::where('statut', 1)
+        // Récupérer uniquement les postes actifs.
+        // Dans la base de données, le statut est une chaîne : "actif".
+        $postes = Poste::actifs()
             ->orderBy('nom')
             ->get(['id', 'nom', 'departement_id']);
 
@@ -109,7 +141,7 @@ class EmployeController extends Controller
             'telephone'       => ['nullable', 'string', 'max:20'],
             'adresse'         => ['nullable', 'string'],
             'date_naissance'  => ['nullable', 'date'],
-            'date_embauche'   => ['nullable', 'date'],
+            'date_embauche'   => 'required|date',
             'departement_id'  => ['required', 'exists:departements,id'],
             'poste_id'        => ['required', 'exists:postes,id'],
             'statut'          => ['required', 'in:actif,inactif,sorti'],
@@ -132,10 +164,22 @@ class EmployeController extends Controller
                 ->withErrors(['poste_id' => 'Le poste sélectionné n\'existe pas.']);
         }
 
-        if ($poste->departement_id !== $validated['departement_id']) {
+        // Vérifier que le poste appartient au département sélectionné.
+        if ((string) $poste->departement_id !== (string) $validated['departement_id']) {
             return back()
                 ->withInput()
-                ->withErrors(['poste_id' => 'Le poste sélectionné n\'appartient pas au département choisi.']);
+                ->withErrors([
+                    'poste_id' => 'Le poste sélectionné ne correspond pas au département choisi.'
+                ]);
+        }
+        
+        // Vérifier que le poste est actif.
+        if (!$poste->isActif()) {
+            return back()
+                ->withInput()
+                ->withErrors([
+                    'poste_id' => 'Impossible d\'affecter un employé à un poste inactif.'
+                ]);
         }
 
         if (!$poste->isActif()) {
@@ -176,11 +220,11 @@ class EmployeController extends Controller
         $employe      = Employe::findOrFail($id);
         $departements = Departement::orderBy('nom')->get();
 
-        // ⭐ Postes actifs + celui attribué à cet employé (même inactif)
-        $postes = Poste::where(function ($q) use ($employe) {
-                $q->where('statut', 1)
-                  ->orWhere('id', $employe->poste_id);
-            })
+        // Afficher les postes actifs et conserver également
+        // le poste actuellement attribué à cet employé,
+        // même s'il a été désactivé depuis.
+        $postes = Poste::where('statut', 'actif')
+            ->orWhere('id', $employe->poste_id)
             ->orderBy('nom')
             ->get(['id', 'nom', 'departement_id', 'statut']);
 
@@ -202,19 +246,35 @@ class EmployeController extends Controller
             'telephone'       => ['nullable', 'string', 'max:20'],
             'adresse'         => ['nullable', 'string'],
             'date_naissance'  => ['nullable', 'date'],
-            'date_embauche'   => ['nullable', 'date'],
+            'date_embauche'   => 'required|date',
             'departement_id'  => ['required', 'exists:departements,id'],
             'poste_id'        => ['required', 'exists:postes,id'],
             'statut'          => ['required', 'in:actif,inactif,sorti'],
         ]);
 
-        // ⭐ VÉRIFICATION STRICTE : le poste doit appartenir au département
         $poste = Poste::find($validated['poste_id']);
 
-        if (!$poste || $poste->departement_id !== $validated['departement_id']) {
+        // Vérifier que le poste appartient au département sélectionné.
+        if ((string) $poste->departement_id !== (string) $validated['departement_id']) {
             return back()
                 ->withInput()
-                ->withErrors(['poste_id' => 'Le poste sélectionné n\'appartient pas au département choisi.']);
+                ->withErrors([
+                    'poste_id' => 'Le poste sélectionné ne correspond pas au département choisi.'
+                ]);
+        }
+
+        // Si l'utilisateur change de poste, le nouveau poste doit être actif.
+        // On autorise cependant la conservation de son ancien poste,
+        // même si celui-ci a été désactivé.
+        if (
+            (string) $poste->id !== (string) $employe->poste_id
+            && !$poste->isActif()
+        ) {
+            return back()
+                ->withInput()
+                ->withErrors([
+                    'poste_id' => 'Vous ne pouvez pas affecter cet employé à un nouveau poste inactif.'
+                ]);
         }
 
         try {

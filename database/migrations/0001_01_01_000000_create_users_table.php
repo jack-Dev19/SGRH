@@ -39,6 +39,7 @@ return new class extends Migration
             // Authentification
             $table->string('password');
             $table->boolean('statut')->default(true); // true = actif
+            $table->string('photo', 255)->nullable();
             $table->timestamp('email_verified_at')->nullable();
             $table->rememberToken();
             $table->timestamps();

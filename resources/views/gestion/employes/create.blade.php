@@ -8,14 +8,20 @@
     deptOpen: false,
     posteOpen: false,
     statutOpen: false,
-    selectedDept: '{{ old('departement_id') }}',
-    selectedPoste: '{{ old('poste_id') }}',
-    selectedStatut: '{{ old('statut', 'actif') }}',
+    selectedDept: {{ Js::from((string) old('departement_id', '')) }},
+    selectedPoste: {{ Js::from((string) old('poste_id', '')) }},
+    selectedStatut: {{ Js::from((string) old('statut', 'actif')) }},
     departements: {{ Js::from($departements->map(fn($d) => ['id' => (string)$d->id, 'nom' => $d->nom])->values()) }},
     postesData: {{ Js::from($postes ?? []) }},
+    // Afficher uniquement les postes du département sélectionné.
     get filteredPostes() {
-        if (!this.selectedDept) return [];
-        return this.postesData.filter(p => p.departement_id == this.selectedDept);
+        if (!this.selectedDept) {
+            return [];
+        }
+    
+        return this.postesData.filter(poste =>
+            String(poste.departement_id) === String(this.selectedDept)
+        );
     },
     get selectedDeptName() {
         if (!this.selectedDept) return '';
@@ -189,7 +195,7 @@
                                 {{-- Liste --}}
                                 <ul class="max-h-64 overflow-y-auto p-2 space-y-1 custom-scrollbar">
                                     <template x-for="dept in departements" :key="dept.id">
-                                        <li @click="selectedDept = dept.id; selectedPoste = null; deptOpen = false"
+                                        <li  @click="selectedDept = dept.id;selectedPoste = '';posteOpen = false;deptOpen = false;"
                                             class="group flex items-center justify-between px-4 py-2.5 rounded-2xl cursor-pointer transition-all duration-150"
                                             :class="selectedDept == dept.id ? 'bg-purple-600 text-white shadow-md shadow-purple-500/30' : 'hover:bg-purple-50 text-purple-900'">
                                             <span class="text-sm font-semibold" x-text="dept.nom"></span>
