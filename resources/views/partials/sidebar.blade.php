@@ -1,4 +1,15 @@
 @php
+    // Récupérer les informations générales de l'entreprise
+    $nomEntreprise = \App\Models\Parametre::obtenir(
+        'general',
+        'nom_entreprise',
+        'DIGITAL AGENCY'
+    );
+
+    $logoEntreprise = \App\Models\Parametre::obtenir(
+        'general',
+        'logo_entreprise'
+    );
     $roleMapping = [
         'Administrateur'      => 'admin',
         'Responsable RH'      => 'rh',
@@ -29,17 +40,38 @@
 <aside id="sidebar"
     class="fixed lg:sticky lg:top-0 inset-y-0 left-0 z-40 w-64 lg:h-screen bg-gradient-to-b from-slate-900 via-purple-950 to-slate-900 text-white flex flex-col shrink-0 transform -translate-x-full lg:translate-x-0 transition-transform duration-300 sidebar-scroll ring-1 ring-inset ring-white/5">
 
-    {{-- Logo --}}
+    {{-- Logo dynamique de l'entreprise --}}
     <div class="h-16 flex items-center gap-3 px-5 border-b border-white/5 shrink-0">
-        <div class="bg-gradient-to-br from-purple-500 to-pink-500 p-2 rounded-xl shadow-lg shadow-purple-500/30">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
-            </svg>
-        </div>
+
+        {{-- Afficher le logo enregistré --}}
+        @if (!empty($logoEntreprise))
+            <div class="w-11 h-11 rounded-lg bg-purple-300 flex items-center justify-center overflow-hidden shrink-0 shadow-lg shadow-purple-500/30">
+                <img
+                    src="{{ asset('storage/' . $logoEntreprise) }}"
+                    alt="Logo {{ $nomEntreprise }}"
+                    class="w-full h-full object-contain"
+                >
+            </div>
+        @else
+            {{-- Logo par défaut si aucune image n'est enregistrée --}}
+            <div class="bg-gradient-to-br from-purple-500 to-pink-500 p-2 rounded-xl shadow-lg shadow-purple-500/30">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
+                </svg>
+            </div>
+        @endif
+
+        {{-- Nom dynamique de l'entreprise --}}
         <div class="flex-1 min-w-0">
-            <span class="font-bold text-sm tracking-wide text-white block truncate">DIGITAL AGENCY</span>
-            <span class="text-[9px] text-purple-300 uppercase tracking-widest font-medium">Espace de gestion</span>
+            <span class="font-bold text-sm tracking-wide text-white block truncate">
+                {{ $nomEntreprise }}
+            </span>
+
+            <span class="text-[9px] text-purple-300 uppercase tracking-widest font-medium">
+                Espace de gestion
+            </span>
         </div>
+
     </div>
 
     {{-- Carte profil --}}
@@ -201,7 +233,44 @@
                 </svg>
                 <span>Évaluations</span>
             </a>
-
+            {{-- PARAMÈTRES ADMINISTRATEUR --}}
+            @if($role === 'admin')
+                    
+                <p class="text-[9px] uppercase tracking-[0.15em] text-purple-400 px-3 py-2 mt-5 font-bold">
+                    Administration
+                </p>
+            
+                <a href="{{ route('admin.parametres.index') }}"
+                   class="sidebar-link {{ request()->routeIs('admin.parametres.*') ? 'active' : '' }}">
+            
+                    {{-- Icône paramètres --}}
+                    <svg class="h-4 w-4 shrink-0"
+                         fill="none"
+                         stroke="currentColor"
+                         viewBox="0 0 24 24"
+                         stroke-width="2">
+                        <path stroke-linecap="round"
+                              stroke-linejoin="round"
+                              d="M12 8a4 4 0 100 8 4 4 0 000-8z
+                                 M19.4 15a1.65 1.65 0 00.33 1.82l.06.06
+                                 -1.7 1.7-.06-.06a1.65 1.65 0 00-1.82-.33
+                                 1.65 1.65 0 00-1 1.51V20h-2.4v-.1
+                                 a1.65 1.65 0 00-1-1.51 1.65 1.65 0 00-1.82.33
+                                 l-.06.06-1.7-1.7.06-.06A1.65 1.65 0 008.6 15
+                                 a1.65 1.65 0 00-1.51-1H7v-2.4h.1
+                                 a1.65 1.65 0 001.51-1 1.65 1.65 0 00-.33-1.82
+                                 l-.06-.06 1.7-1.7.06.06a1.65 1.65 0 001.82.33
+                                 1.65 1.65 0 001-1.51V6h2.4v.1
+                                 a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33
+                                 l.06-.06 1.7 1.7-.06.06A1.65 1.65 0 0019.4 10
+                                 a1.65 1.65 0 001.51 1H21v2.4h-.1
+                                 a1.65 1.65 0 00-1.5 1.6z"/>
+                    </svg>
+                
+                    <span>Paramètres</span>
+                </a>
+            
+            @endif
         @endif
 
         {{-- CHEF DE DÉPARTEMENT --}}

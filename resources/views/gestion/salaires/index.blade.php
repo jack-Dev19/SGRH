@@ -1,5 +1,20 @@
 @extends('layouts.dashboard')
 
+@php
+    // Récupérer la devise configurée dans les paramètres généraux.
+    $devise = \App\Models\Parametre::obtenir(
+        'general',
+        'devise',
+        'MGA'
+    );
+    // Récupérer le format de date configuré dans les paramètres généraux.
+    $formatDate = \App\Models\Parametre::obtenir(
+        'general',
+        'format_date',
+        'd/m/Y'
+    );
+@endphp
+
 @section('title', 'Salaires')
 
 @section('content')
@@ -85,7 +100,7 @@
                 </div>
             </div>
             <p class="text-lg font-extrabold text-purple-700 truncate">{{ number_format($stats['masse_salariale'], 0, ',', ' ') }}</p>
-            <p class="text-[9px] text-purple-500 font-semibold">MGA / mois</p>
+            <p class="text-[9px] text-purple-500 font-semibold">{{ $devise }} / mois</p>
         </div>
 
         <div class="rounded-2xl border border-blue-200 bg-blue-50/50 p-5 shadow-sm">
@@ -96,7 +111,7 @@
                 </div>
             </div>
             <p class="text-lg font-extrabold text-blue-700 truncate">{{ number_format($stats['salaire_moyen'], 0, ',', ' ') }}</p>
-            <p class="text-[9px] text-blue-500 font-semibold">MGA / mois</p>
+            <p class="text-[9px] text-blue-500 font-semibold">{{ $devise }} / mois</p>
         </div>
     </div>
 
@@ -204,7 +219,7 @@
                         <p class="text-white/80 text-[10px] font-semibold uppercase tracking-wider">Salaire de base</p>
                         <p class="text-white text-lg font-extrabold leading-none">
                             {{ number_format($salaire->salaire_base, 0, ',', ' ') }}
-                            <span class="text-xs font-normal">MGA</span>
+                            <span class="text-xs font-normal">{{ $devise }}</span>
                         </p>
                     </div>
                 </div>
@@ -240,11 +255,11 @@
                     <div class="grid grid-cols-2 gap-2 mb-4">
                         <div class="{{ $c['bg'] }} {{ $c['border'] }} border rounded-xl p-2.5">
                             <p class="text-[9px] font-bold text-slate-500 uppercase tracking-wider mb-1">Depuis</p>
-                            <p class="text-[11px] font-bold {{ $c['text'] }} leading-tight">{{ $salaire->date_debut?->format('d/m/Y') }}</p>
+                            <p class="text-[11px] font-bold {{ $c['text'] }} leading-tight">{{ $salaire->date_debut?->format($formatDate) }}</p>
                         </div>
                         <div class="{{ $c['bg'] }} {{ $c['border'] }} border rounded-xl p-2.5">
                             <p class="text-[9px] font-bold text-slate-500 uppercase tracking-wider mb-1">Jusqu'à</p>
-                            <p class="text-[11px] font-bold {{ $c['text'] }} leading-tight">{{ $salaire->date_fin?->format('d/m/Y') ?? 'Indéterminé' }}</p>
+                            <p class="text-[11px] font-bold {{ $c['text'] }} leading-tight">{{ $salaire->date_fin?->format($formatDate) ?? 'Indéterminé' }}</p>
                         </div>
                     </div>
 

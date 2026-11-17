@@ -4,6 +4,15 @@
 
 @section('content')
 
+@php
+    // Récupérer la devise configurée dans les paramètres généraux.
+    $devise = \App\Models\Parametre::obtenir(
+        'general',
+        'devise',
+        'MGA'
+    );
+@endphp
+
 <div class="max-w-3xl mx-auto px-4 py-8" x-data="{
     employeOpen: false,
     typeOpen: false,
@@ -187,7 +196,7 @@
                                     class="w-full pl-12 pr-4 py-3.5 bg-white border-2 border-purple-200 text-purple-900 text-sm rounded-full focus:ring-4 focus:ring-purple-500/20 focus:border-purple-500 placeholder-purple-300 transition-all outline-none">
                             </div>
                             <div class="relative">
-                                <input type="text" name="devise" required value="{{ old('devise', 'MGA') }}" placeholder="MGA"
+                                <input type="text" name="devise" required value="{{ old('devise', $devise) }}" placeholder="{{ $devise }}"
                                     class="w-full px-4 py-3.5 bg-white border-2 border-purple-200 text-purple-900 text-sm rounded-full font-bold text-center focus:ring-4 focus:ring-purple-500/20 focus:border-purple-500 placeholder-purple-300 transition-all outline-none">
                             </div>
                         </div>

@@ -186,7 +186,7 @@
                                     class="w-full pl-12 pr-4 py-3.5 bg-white border-2 border-purple-200 text-purple-900 text-sm rounded-full focus:ring-4 focus:ring-purple-500/20 focus:border-purple-500 placeholder-purple-300 transition-all outline-none">
                             </div>
                             <div class="relative">
-                                <input type="text" name="devise" required value="{{ old('devise', $contrat->devise) }}" placeholder="MGA"
+                                <input type="text" name="devise" required value="{{ old('devise', $contrat->devise) }}" placeholder="{{ $contrat->devise }}"
                                     class="w-full px-4 py-3.5 bg-white border-2 border-purple-200 text-purple-900 text-sm rounded-full font-bold text-center focus:ring-4 focus:ring-purple-500/20 focus:border-purple-500 placeholder-purple-300 transition-all outline-none">
                             </div>
                         </div>

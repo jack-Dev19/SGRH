@@ -11,6 +11,12 @@
         'cdd'    => 0,
         'actifs' => 0,
     ];
+    // Devise configurée dans les paramètres généraux.
+    $devise = \App\Models\Parametre::obtenir(
+        'general',
+        'devise',
+        'MGA'
+    );
 @endphp
 
 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6" x-data="{

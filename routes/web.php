@@ -34,6 +34,7 @@ use App\Http\Controllers\Gestion\UserController;
 use App\Http\Controllers\PublicController;
 use App\Http\Controllers\Rh\DashboardController as RhDashboardController;
 use App\Services\AbsenceService;
+use App\Http\Controllers\Admin\ParametreController;
 use Illuminate\Support\Facades\Route;
 
 // ==================================================================
@@ -77,7 +78,27 @@ Route::middleware('auth')->group(function () {
 
     // ADMIN
     Route::middleware('role:Administrateur')->group(function () {
-        Route::get('/admin/dashboard', [AdminDashboardController::class, 'index'])->name('admin.dashboard');
+        // Tableau de bord administrateur
+        Route::get('/admin/dashboard', [AdminDashboardController::class, 'index'])
+            ->name('admin.dashboard');
+        // Accueil du module Paramètres
+        Route::get('/admin/parametres', [ParametreController::class, 'index'])
+            ->name('admin.parametres.index');
+        // Liste des utilisateurs dans les paramètres
+        Route::get('/admin/parametres/utilisateurs', [ParametreController::class, 'utilisateurs'])
+            ->name('admin.parametres.utilisateurs');
+        // Liste des rôles du système
+        Route::get('/admin/parametres/roles', [ParametreController::class, 'roles'])
+            ->name('admin.parametres.roles');
+        // Liste des types de congés
+        Route::get('/admin/parametres/types-conges', [ParametreController::class, 'typesConges'])
+            ->name('admin.parametres.types-conges');
+        // Liste des jours fériés
+        Route::get('/admin/parametres/jours-feries', [ParametreController::class, 'joursFeries'])
+            ->name('admin.parametres.jours-feries');
+        // Enregistrement des paramètres du système
+        Route::post('/admin/parametres', [ParametreController::class, 'update'])
+            ->name('admin.parametres.update');
     });
 
     // RH

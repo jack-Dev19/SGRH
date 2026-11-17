@@ -4,6 +4,15 @@
 
 @section('content')
 
+@php
+    // Récupérer la devise configurée dans les paramètres généraux.
+    $devise = \App\Models\Parametre::obtenir(
+        'general',
+        'devise',
+        'MGA'
+    );
+@endphp
+
     {{-- EN-TÊTE --}}
     <div class="mb-6 flex items-start justify-between">
         <div>
@@ -38,7 +47,7 @@
             <p class="text-2xl font-extrabold text-slate-900 mb-1">
                 {{ number_format($masseSalariale, 0, ',', ' ') }}
             </p>
-            <p class="text-xs text-slate-400">MGA / mois</p>
+            <p class="text-xs text-slate-400">{{ $devise }} / mois</p>
         </div>
 
         <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-5">

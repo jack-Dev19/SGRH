@@ -8,7 +8,10 @@ use App\Models\JourFerie;
 use App\Models\Role;
 use App\Models\TypeConge;
 use App\Models\User;
+use App\Models\Parametre;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
+use Illuminate\Http\Request;
 
 /**
  * ParametreController
@@ -18,11 +21,13 @@ use Illuminate\View\View;
  */
 class ParametreController extends Controller
 {
+    
     /**
-     * Page d'accueil des paramètres : menu des sous-sections.
+     * Page d'accueil du centre des paramètres.
      */
     public function index(): View
     {
+        // Statistiques existantes
         $stats = [
             'utilisateurs' => User::count(),
             'roles'        => Role::count(),
@@ -31,19 +36,115 @@ class ParametreController extends Controller
             'actions_log'  => HistoriqueAction::count(),
         ];
 
-        return view('admin.parametres.index', compact('stats'));
+        // Paramètres généraux enregistrés en base de données
+        $parametresGeneraux = Parametre::where('groupe', 'general')
+            ->pluck('valeur', 'cle')
+            ->toArray();
+
+        return view(
+            'admin.parametres.index',
+            compact('stats', 'parametresGeneraux')
+        );
     }
+    /**
+     * Enregistrer les paramètres du système.
+     */
+    public function update(Request $request)
+    {
+        // 1. Validation des paramètres généraux et du logo
+        $donnees = $request->validate([
+            'nom_entreprise' => ['required', 'string', 'max:255'],
+            'fuseau_horaire' => ['required', 'timezone'],
+            'langue'         => ['required', 'in:fr,mg,en'],
+            'devise'         => ['required', 'in:MGA,EUR,USD'],
+            'format_date'    => ['required', 'in:d/m/Y,Y-m-d,m/d/Y'],
+
+            // Logo facultatif : PNG, JPG ou WEBP, maximum 2 Mo
+            'logo_entreprise' => [
+                'nullable',
+                'image',
+                'mimes:png,jpg,jpeg,webp',
+                'max:2048',
+            ],
+        ]);
+
+        // 2. Enregistrer les paramètres textuels
+        foreach ([
+            'nom_entreprise',
+            'fuseau_horaire',
+            'langue',
+            'devise',
+            'format_date',
+        ] as $cle) {
+            Parametre::definir('general', $cle, $donnees[$cle]);
+        }
+
+        // 3. Traiter le logo uniquement si un nouveau fichier est envoyé
+        if ($request->hasFile('logo_entreprise')) {
+
+            // Récupérer le chemin de l'ancien logo
+            $ancienLogo = Parametre::obtenir(
+                'general',
+                'logo_entreprise'
+            );
+
+            // Stocker le nouveau logo dans storage/app/public/logos
+            $nouveauLogo = $request->file('logo_entreprise')
+                ->store('logos', 'public');
+
+            // Enregistrer le chemin du nouveau logo en base de données
+            Parametre::definir(
+                'general',
+                'logo_entreprise',
+                $nouveauLogo
+            );
+
+            // Supprimer l'ancien fichier après l'enregistrement du nouveau
+            if ($ancienLogo && Storage::disk('public')->exists($ancienLogo)) {
+                Storage::disk('public')->delete($ancienLogo);
+            }
+        }
+
+        // 4. Retourner vers la page des paramètres
+        return redirect()
+            ->route('admin.parametres.index')
+            ->with(
+                'success',
+                'Les paramètres généraux ont été enregistrés avec succès.'
+            );
+    }
+
+
 
     /**
      * Liste des utilisateurs (comptes).
      */
-    public function utilisateurs(): View
+    public function utilisateurs(Request $request): View
     {
+        // Récupérer le terme recherché
+        $recherche = $request->input('recherche');
+    
+        // Construire la liste des utilisateurs
         $utilisateurs = User::with('role')
+            ->when($recherche, function ($query, $recherche) {
+    
+                // Rechercher par nom ou adresse e-mail
+                $query->where(function ($q) use ($recherche) {
+    
+                    $q->where('name', 'LIKE', "%{$recherche}%")
+                      ->orWhere('email', 'LIKE', "%{$recherche}%");
+    
+                });
+    
+            })
             ->orderBy('name')
-            ->paginate(15);
-
-        return view('admin.parametres.utilisateurs', compact('utilisateurs'));
+            ->paginate(15)
+            ->withQueryString();
+    
+        return view(
+            'admin.parametres.utilisateurs',
+            compact('utilisateurs', 'recherche')
+        );
     }
 
     /**
