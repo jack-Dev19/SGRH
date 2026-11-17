@@ -13,6 +13,11 @@
         'format_date',
         'd/m/Y'
     );
+    // Initialiser le service de conversion des devises.
+    $conversionDevise = app(\App\Services\ConversionDeviseService::class);
+
+    // Récupérer le taux correspondant à la devise sélectionnée.
+    $tauxConversion = $conversionDevise->obtenirTaux($devise);
 @endphp
 
 @section('title', 'Salaires')
@@ -99,7 +104,7 @@
                     <span class="w-2 h-2 rounded-full bg-purple-500"></span>
                 </div>
             </div>
-            <p class="text-lg font-extrabold text-purple-700 truncate">{{ number_format($stats['masse_salariale'], 0, ',', ' ') }}</p>
+            <p class="text-lg font-extrabold text-purple-700 truncate">{{ number_format($stats['masse_salariale'] * $tauxConversion, 2, ',', ' ') }}</p>
             <p class="text-[9px] text-purple-500 font-semibold">{{ $devise }} / mois</p>
         </div>
 
@@ -110,7 +115,7 @@
                     <span class="w-2 h-2 rounded-full bg-blue-500"></span>
                 </div>
             </div>
-            <p class="text-lg font-extrabold text-blue-700 truncate">{{ number_format($stats['salaire_moyen'], 0, ',', ' ') }}</p>
+            <p class="text-lg font-extrabold text-blue-700 truncate">{{ number_format($stats['salaire_moyen'] * $tauxConversion, 2, ',', ' ') }}</p>
             <p class="text-[9px] text-blue-500 font-semibold">{{ $devise }} / mois</p>
         </div>
     </div>
@@ -218,7 +223,7 @@
                     <div class="absolute bottom-3 left-5">
                         <p class="text-white/80 text-[10px] font-semibold uppercase tracking-wider">Salaire de base</p>
                         <p class="text-white text-lg font-extrabold leading-none">
-                            {{ number_format($salaire->salaire_base, 0, ',', ' ') }}
+                            {{ number_format($salaire->salaire_base * $tauxConversion, 2, ',', ' ') }}
                             <span class="text-xs font-normal">{{ $devise }}</span>
                         </p>
                     </div>

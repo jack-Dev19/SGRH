@@ -1,0 +1,1526 @@
+﻿ANALYSE DU MODULE PARAMETRES SGRH
+
+
+========================================
+FICHIER : app\Http\Controllers\Admin\ParametreController.php
+========================================
+
+<?php
+
+namespace App\Http\Controllers\Admin;
+
+use App\Http\Controllers\Controller;
+use App\Models\HistoriqueAction;
+use App\Models\JourFerie;
+use App\Models\Role;
+use App\Models\TypeConge;
+use App\Models\User;
+use App\Models\Parametre;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\View\View;
+use Illuminate\Http\Request;
+
+/**
+ * ParametreController
+ * -------------------
+ * Gestion des paramÃ¨tres systÃ¨me.
+ * RÃ©servÃ© au rÃ´le Administrateur.
+ */
+class ParametreController extends Controller
+{
+    
+    /**
+     * Page d'accueil du centre des paramÃ¨tres.
+     */
+    public function index(): View
+    {
+        // Statistiques existantes
+        $stats = [
+            'utilisateurs' => User::count(),
+            'roles'        => Role::count(),
+            'types_conges' => TypeConge::count(),
+            'jours_feries' => JourFerie::count(),
+            'actions_log'  => HistoriqueAction::count(),
+        ];
+
+        // ParamÃ¨tres gÃ©nÃ©raux enregistrÃ©s en base de donnÃ©es
+        $parametresGeneraux = Parametre::where('groupe', 'general')
+            ->pluck('valeur', 'cle')
+            ->toArray();
+
+        return view(
+            'admin.parametres.index',
+            compact('stats', 'parametresGeneraux')
+        );
+    }
+    /**
+     * Enregistrer les paramÃ¨tres du systÃ¨me.
+     */
+    public function update(Request $request)
+    {
+        // 1. Validation des paramÃ¨tres gÃ©nÃ©raux et du logo
+        $donnees = $request->validate([
+            'nom_entreprise' => ['required', 'string', 'max:255'],
+            'fuseau_horaire' => ['required', 'timezone'],
+            'langue'         => ['required', 'in:fr,mg,en'],
+            'devise'         => ['required', 'in:MGA,EUR,USD'],
+            'format_date'    => ['required', 'in:d/m/Y,Y-m-d,m/d/Y'],
+
+            // Logo facultatif : PNG, JPG ou WEBP, maximum 2 Mo
+            'logo_entreprise' => [
+                'nullable',
+                'image',
+                'mimes:png,jpg,jpeg,webp',
+                'max:2048',
+            ],
+        ]);
+
+        // 2. Enregistrer les paramÃ¨tres textuels
+        foreach ([
+            'nom_entreprise',
+            'fuseau_horaire',
+            'langue',
+            'devise',
+            'format_date',
+        ] as $cle) {
+            Parametre::definir('general', $cle, $donnees[$cle]);
+        }
+
+        // 3. Traiter le logo uniquement si un nouveau fichier est envoyÃ©
+        if ($request->hasFile('logo_entreprise')) {
+
+            // RÃ©cupÃ©rer le chemin de l'ancien logo
+            $ancienLogo = Parametre::obtenir(
+                'general',
+                'logo_entreprise'
+            );
+
+            // Stocker le nouveau logo dans storage/app/public/logos
+            $nouveauLogo = $request->file('logo_entreprise')
+                ->store('logos', 'public');
+
+            // Enregistrer le chemin du nouveau logo en base de donnÃ©es
+            Parametre::definir(
+                'general',
+                'logo_entreprise',
+                $nouveauLogo
+            );
+
+            // Supprimer l'ancien fichier aprÃ¨s l'enregistrement du nouveau
+            if ($ancienLogo && Storage::disk('public')->exists($ancienLogo)) {
+                Storage::disk('public')->delete($ancienLogo);
+            }
+        }
+
+        // 4. Retourner vers la page des paramÃ¨tres
+        return redirect()
+            ->route('admin.parametres.index')
+            ->with(
+                'success',
+                'Les paramÃ¨tres gÃ©nÃ©raux ont Ã©tÃ© enregistrÃ©s avec succÃ¨s.'
+            );
+    }
+
+
+
+    /**
+     * Liste des utilisateurs (comptes).
+     */
+    public function utilisateurs(Request $request): View
+    {
+        // RÃ©cupÃ©rer le terme recherchÃ©
+        $recherche = $request->input('recherche');
+    
+        // Construire la liste des utilisateurs
+        $utilisateurs = User::with('role')
+            ->when($recherche, function ($query, $recherche) {
+    
+                // Rechercher par nom ou adresse e-mail
+                $query->where(function ($q) use ($recherche) {
+    
+                    $q->where('name', 'LIKE', "%{$recherche}%")
+                      ->orWhere('email', 'LIKE', "%{$recherche}%");
+    
+                });
+    
+            })
+            ->orderBy('name')
+            ->paginate(15)
+            ->withQueryString();
+    
+        return view(
+            'admin.parametres.utilisateurs',
+            compact('utilisateurs', 'recherche')
+        );
+    }
+
+    /**
+     * Liste des rÃ´les.
+     */
+    public function roles(): View
+    {
+        $roles = Role::withCount('users')
+            ->orderBy('nom')
+            ->get();
+
+        return view('admin.parametres.roles', compact('roles'));
+    }
+
+    /**
+     * Liste des types de congÃ©s.
+     */
+    public function typesConges(): View
+    {
+        $types = TypeConge::orderBy('nom')->get();
+
+        return view('admin.parametres.types-conges', compact('types'));
+    }
+
+    /**
+     * Liste des jours fÃ©riÃ©s.
+     */
+    public function joursFeries(): View
+    {
+        $jours = JourFerie::orderBy('date')->get();
+
+        return view('admin.parametres.jours-feries', compact('jours'));
+    }
+
+    /**
+     * Historique des actions (audit log).
+     */
+    public function historique(): View
+    {
+        $actions = HistoriqueAction::with('user')
+            ->orderByDesc('created_at')
+            ->paginate(30);
+
+        return view('admin.parametres.historique', compact('actions'));
+    }
+}
+
+
+========================================
+FICHIER : app\Models\Parametre.php
+========================================
+
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+
+class Parametre extends Model
+{
+    use HasFactory, HasUuids;
+
+    /**
+     * Table associÃ©e au modÃ¨le.
+     */
+    protected $table = 'parametres';
+
+    /**
+     * Champs autorisÃ©s Ã  Ãªtre remplis.
+     */
+    protected $fillable = [
+        'groupe',
+        'cle',
+        'valeur',
+    ];
+
+    /**
+     * RÃ©cupÃ©rer la valeur d'un paramÃ¨tre.
+     */
+    public static function obtenir(string $groupe, string $cle, mixed $valeurParDefaut = null): mixed
+    {
+        $parametre = static::where('groupe', $groupe)
+            ->where('cle', $cle)
+            ->first();
+
+        return $parametre?->valeur ?? $valeurParDefaut;
+    }
+
+    /**
+     * CrÃ©er ou modifier un paramÃ¨tre.
+     */
+    public static function definir(string $groupe, string $cle, mixed $valeur): self
+    {
+        return static::updateOrCreate(
+            [
+                'groupe' => $groupe,
+                'cle' => $cle,
+            ],
+            [
+                'valeur' => is_array($valeur)
+                    ? json_encode($valeur, JSON_UNESCAPED_UNICODE)
+                    : (string) $valeur,
+            ]
+        );
+    }
+}
+
+
+========================================
+FICHIER : database\migrations\2026_11_16_135205_create_parametres_table.php
+========================================
+
+
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    /**
+     * CrÃ©ation de la table des paramÃ¨tres du SGRH.
+     */
+    public function up(): void
+    {
+        Schema::create('parametres', function (Blueprint $table) {
+
+            // Identifiant UUID
+            $table->uuid('id')->primary();
+
+            // Module concernÃ© : general, notifications, securite...
+            $table->string('groupe', 100);
+
+            // ClÃ© unique du paramÃ¨tre dans son groupe
+            $table->string('cle', 150);
+
+            // Valeur du paramÃ¨tre (texte, nombre, boolÃ©en ou JSON)
+            $table->longText('valeur')->nullable();
+
+            // Dates de crÃ©ation et de modification
+            $table->timestamps();
+
+            // Ã‰vite les doublons dans un mÃªme groupe
+            $table->unique(['groupe', 'cle']);
+        });
+    }
+
+    /**
+     * Suppression de la table.
+     */
+    public function down(): void
+    {
+        Schema::dropIfExists('parametres');
+    }
+};
+
+
+========================================
+FICHIER : resources\views\admin\parametres\index.blade.php
+========================================
+
+
+@extends('layouts.dashboard')
+
+@section('title', 'ParamÃ¨tres')
+
+@section('content')
+
+<div class="max-w-7xl mx-auto space-y-6">
+
+    {{-- En-tÃªte du centre de paramÃ¨tres --}}
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+
+        <div>
+            <h1 class="text-2xl font-bold text-slate-800">
+                ParamÃ¨tres
+            </h1>
+
+            <p class="text-sm text-slate-500 mt-1">
+                Configurez et gÃ©rez les paramÃ¨tres gÃ©nÃ©raux de votre application SGRH.
+            </p>
+        </div>
+
+        {{-- Actions globales --}}
+        <div class="flex flex-wrap items-center gap-2">
+
+            <button
+                type="button"
+                class="px-4 py-2 text-sm font-medium text-slate-600 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition"
+            >
+                Annuler
+            </button>
+
+            <button
+                type="button"
+                class="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition"
+            >
+                Enregistrer les modifications
+            </button>
+
+        </div>
+
+    </div>
+
+    {{-- Navigation et contenu des paramÃ¨tres --}}
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+        {{-- Navigation latÃ©rale --}}
+        <aside class="lg:col-span-3">
+            <div class="bg-white border border-slate-200 rounded-xl p-3">
+
+                <h2 class="px-3 py-2 text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                    Configuration
+                </h2>
+
+                <nav class="space-y-1">
+
+                    {{-- Les liens seront rendus interactifs Ã  l'Ã©tape suivante --}}
+                    <a href="#general" class="block px-3 py-2.5 rounded-lg text-sm font-medium text-blue-700 bg-blue-50">
+                        GÃ©nÃ©ral
+                    </a>
+
+                    <a href="#notifications" class="block px-3 py-2.5 rounded-lg text-sm text-slate-600 hover:bg-slate-50">
+                        Notifications
+                    </a>
+
+                    <a href="#securite" class="block px-3 py-2.5 rounded-lg text-sm text-slate-600 hover:bg-slate-50">
+                        SÃ©curitÃ©
+                    </a>
+
+                    <a href="#paie" class="block px-3 py-2.5 rounded-lg text-sm text-slate-600 hover:bg-slate-50">
+                        Paie
+                    </a>
+
+                    <a href="#conges" class="block px-3 py-2.5 rounded-lg text-sm text-slate-600 hover:bg-slate-50">
+                        CongÃ©s
+                    </a>
+
+                    <a href="#presence" class="block px-3 py-2.5 rounded-lg text-sm text-slate-600 hover:bg-slate-50">
+                        PrÃ©sence
+                    </a>
+
+                    <a href="#performance" class="block px-3 py-2.5 rounded-lg text-sm text-slate-600 hover:bg-slate-50">
+                        Performance
+                    </a>
+
+                    <a href="#recrutement" class="block px-3 py-2.5 rounded-lg text-sm text-slate-600 hover:bg-slate-50">
+                        Recrutement
+                    </a>
+
+                </nav>
+
+            </div>
+        </aside>
+
+        {{-- Zone principale --}}
+        <main class="lg:col-span-9">
+
+            <div class="bg-white border border-slate-200 rounded-xl p-6 min-h-[400px]">
+            
+                {{-- Section GÃ©nÃ©ral --}}
+                @include('admin.parametres.partials.general')
+            
+                {{-- Section Notifications --}}
+                @include('admin.parametres.partials.notifications')
+            
+            </div>
+        
+        </main>
+
+    </div>
+
+</div>
+
+@endsection
+
+
+========================================
+FICHIER : resources\views\admin\parametres\partials\general.blade.php
+========================================
+
+
+{{-- ============================================================
+     SECTION : PARAMÃˆTRES GÃ‰NÃ‰RAUX
+     Fichier : partials/general.blade.php
+============================================================ --}}
+
+<section id="general" class="space-y-6">
+
+    {{-- PrÃ©sentation --}}
+    <div>
+        <h2 class="text-lg font-semibold text-slate-800">
+            ParamÃ¨tres gÃ©nÃ©raux
+        </h2>
+
+        <p class="text-sm text-slate-500 mt-1">
+            GÃ©rez les informations de votre entreprise et les prÃ©fÃ©rences
+            gÃ©nÃ©rales de votre application.
+        </p>
+    </div>
+
+    {{-- Formulaire d'enregistrement --}}
+    <form
+    action="{{ route('admin.parametres.update') }}"
+    method="POST"
+    enctype="multipart/form-data"
+    class="space-y-6"
+    >
+        @csrf
+
+        {{-- Informations de l'entreprise --}}
+        <div class="border border-slate-200 rounded-xl p-5 space-y-5">
+
+            <div>
+                <h3 class="font-semibold text-slate-800">
+                    Informations de l'entreprise
+                </h3>
+
+                <p class="text-xs text-slate-500 mt-1">
+                    Informations utilisÃ©es dans les diffÃ©rentes parties du SGRH.
+                </p>
+            </div>
+
+            {{-- Nom de l'entreprise --}}
+            <div>
+                <label for="nom_entreprise"
+                       class="block text-sm font-medium text-slate-700 mb-1">
+                    Nom de l'entreprise
+                </label>
+
+                <input
+                    type="text"
+                    id="nom_entreprise"
+                    name="nom_entreprise"
+                    value="{{ old('nom_entreprise', $parametresGeneraux['nom_entreprise'] ?? '') }}"
+                    placeholder="Saisir le nom de l'entreprise"
+                    required
+                    class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-blue-500"
+                >
+
+                @error('nom_entreprise')
+                    <p class="text-sm text-red-600 mt-1">{{ $message }}</p>
+                @enderror
+            </div>
+            
+            {{-- Logo de l'entreprise --}}
+            <div>
+                <label for="logo_entreprise"
+                       class="block text-sm font-medium text-slate-700 mb-1">
+                    Logo de l'entreprise
+                </label>
+            
+                {{-- AperÃ§u du logo dÃ©jÃ  enregistrÃ© --}}
+                <div class="mb-3">
+                    @if (!empty($parametresGeneraux['logo_entreprise']))
+                        <img
+                            id="logoPreview"
+                            src="{{ asset('storage/' . $parametresGeneraux['logo_entreprise']) }}"
+                            alt="Logo de l'entreprise"
+                            class="h-24 w-auto max-w-xs object-contain rounded-lg border border-slate-200 p-2"
+                        >
+                    @else
+                        <img
+                            id="logoPreview"
+                            src=""
+                            alt="AperÃ§u du logo"
+                            class="hidden h-24 w-auto max-w-xs object-contain rounded-lg border border-slate-200 p-2"
+                        >
+                        <p id="logoPlaceholder" class="text-xs text-slate-400">
+                            Aucun logo enregistrÃ© pour le moment.
+                        </p>
+                    @endif
+                </div>
+            
+                {{-- SÃ©lection d'un nouveau logo --}}
+                <input
+                    type="file"
+                    id="logo_entreprise"
+                    name="logo_entreprise"
+                    accept="image/png,image/jpeg,image/webp"
+                    class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                >
+            
+                <p class="text-xs text-slate-400 mt-1">
+                    Formats acceptÃ©s : PNG, JPG et WEBP. Taille maximale : 2 Mo.
+                </p>
+            
+                @error('logo_entreprise')
+                    <p class="text-sm text-red-600 mt-1">{{ $message }}</p>
+                @enderror
+            </div>
+
+
+        </div>
+
+        {{-- PrÃ©fÃ©rences rÃ©gionales --}}
+        <div class="border border-slate-200 rounded-xl p-5 space-y-5">
+
+            <div>
+                <h3 class="font-semibold text-slate-800">
+                    PrÃ©fÃ©rences rÃ©gionales
+                </h3>
+
+                <p class="text-xs text-slate-500 mt-1">
+                    DÃ©finissez les formats utilisÃ©s dans l'application.
+                </p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+
+                {{-- Fuseau horaire --}}
+                <div>
+                    <label for="fuseau_horaire"
+                           class="block text-sm font-medium text-slate-700 mb-1">
+                        Fuseau horaire
+                    </label>
+
+                    <select
+                        id="fuseau_horaire"
+                        name="fuseau_horaire"
+                        required
+                        class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                    >
+                        @foreach ([
+                            'Indian/Antananarivo' => 'Madagascar (UTC+3)',
+                            'Africa/Nairobi' => 'Nairobi (UTC+3)',
+                            'Europe/Paris' => 'Paris',
+                            'UTC' => 'UTC',
+                        ] as $valeur => $libelle)
+                            <option
+                                value="{{ $valeur }}"
+                                @selected(old('fuseau_horaire', $parametresGeneraux['fuseau_horaire'] ?? 'Indian/Antananarivo') === $valeur)
+                            >
+                                {{ $libelle }}
+                            </option>
+                        @endforeach
+                    </select>
+
+                    @error('fuseau_horaire')
+                        <p class="text-sm text-red-600 mt-1">{{ $message }}</p>
+                    @enderror
+                </div>
+
+                {{-- Langue --}}
+                <div>
+                    <label for="langue"
+                           class="block text-sm font-medium text-slate-700 mb-1">
+                        Langue
+                    </label>
+
+                    <select
+                        id="langue"
+                        name="langue"
+                        required
+                        class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                    >
+                        @foreach ([
+                            'fr' => 'FranÃ§ais',
+                            'mg' => 'Malagasy',
+                            'en' => 'Anglais',
+                        ] as $valeur => $libelle)
+                            <option
+                                value="{{ $valeur }}"
+                                @selected(old('langue', $parametresGeneraux['langue'] ?? 'fr') === $valeur)
+                            >
+                                {{ $libelle }}
+                            </option>
+                        @endforeach
+                    </select>
+
+                    @error('langue')
+                        <p class="text-sm text-red-600 mt-1">{{ $message }}</p>
+                    @enderror
+                </div>
+
+                {{-- Devise --}}
+                <div>
+                    <label for="devise"
+                           class="block text-sm font-medium text-slate-700 mb-1">
+                        Devise
+                    </label>
+
+                    <select
+                        id="devise"
+                        name="devise"
+                        required
+                        class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                    >
+                        @foreach ([
+                            'MGA' => 'Ariary (MGA)',
+                            'EUR' => 'Euro (EUR)',
+                            'USD' => 'Dollar amÃ©ricain (USD)',
+                        ] as $valeur => $libelle)
+                            <option
+                                value="{{ $valeur }}"
+                                @selected(old('devise', $parametresGeneraux['devise'] ?? 'MGA') === $valeur)
+                            >
+                                {{ $libelle }}
+                            </option>
+                        @endforeach
+                    </select>
+
+                    @error('devise')
+                        <p class="text-sm text-red-600 mt-1">{{ $message }}</p>
+                    @enderror
+                </div>
+
+                {{-- Format de date --}}
+                <div>
+                    <label for="format_date"
+                           class="block text-sm font-medium text-slate-700 mb-1">
+                        Format de date
+                    </label>
+
+                    <select
+                        id="format_date"
+                        name="format_date"
+                        required
+                        class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                    >
+                        @foreach ([
+                            'd/m/Y' => 'JJ/MM/AAAA',
+                            'Y-m-d' => 'AAAA-MM-JJ',
+                            'm/d/Y' => 'MM/JJ/AAAA',
+                        ] as $valeur => $libelle)
+                            <option
+                                value="{{ $valeur }}"
+                                @selected(old('format_date', $parametresGeneraux['format_date'] ?? 'd/m/Y') === $valeur)
+                            >
+                                {{ $libelle }}
+                            </option>
+                        @endforeach
+                    </select>
+
+                    @error('format_date')
+                        <p class="text-sm text-red-600 mt-1">{{ $message }}</p>
+                    @enderror
+                </div>
+
+            </div>
+        </div>
+
+        {{-- Bouton temporaire du formulaire GÃ©nÃ©ral --}}
+        <div class="flex justify-end">
+            <button
+                type="submit"
+                class="px-5 py-2.5 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition"
+            >
+                Enregistrer les paramÃ¨tres gÃ©nÃ©raux
+            </button>
+        </div>
+
+    </form>
+    <script>
+        // PrÃ©visualiser le nouveau logo avant son enregistrement
+        document.getElementById('logo_entreprise')?.addEventListener('change', function (event) {
+            const fichier = event.target.files[0];
+        
+            if (!fichier) return;
+        
+            const apercu = document.getElementById('logoPreview');
+            const placeholder = document.getElementById('logoPlaceholder');
+        
+            apercu.src = URL.createObjectURL(fichier);
+            apercu.classList.remove('hidden');
+        
+            if (placeholder) {
+                placeholder.classList.add('hidden');
+            }
+        });
+    </script>
+</section>
+
+
+========================================
+FICHIER : app\Providers\AppServiceProvider.php
+========================================
+
+<?php
+
+namespace App\Providers;
+
+use App\Models\Parametre;
+use Illuminate\Support\ServiceProvider;
+
+class AppServiceProvider extends ServiceProvider
+{
+    /**
+     * Register any application services.
+     */
+    public function register(): void
+    {
+        //
+    }
+
+    /**
+     * Bootstrap any application services.
+     */
+    public function boot(): void
+    {
+        // ==========================================
+        // 1. GESTION DU FUSEAU HORAIRE
+        // ==========================================
+
+        $fuseauHoraire = Parametre::obtenir(
+            'general',
+            'fuseau_horaire',
+            config('app.timezone')
+        );
+
+        // VÃ©rifier et appliquer le fuseau horaire.
+        if (in_array($fuseauHoraire, timezone_identifiers_list(), true)) {
+            config(['app.timezone' => $fuseauHoraire]);
+
+            date_default_timezone_set($fuseauHoraire);
+        }
+
+        // ==========================================
+        // 2. GESTION DE LA LANGUE
+        // ==========================================
+
+        $langue = Parametre::obtenir(
+            'general',
+            'langue',
+            config('app.locale')
+        );
+
+        // VÃ©rifier que la langue est autorisÃ©e.
+        if (in_array($langue, ['fr', 'mg', 'en'], true)) {
+            config(['app.locale' => $langue]);
+        }
+    }
+
+}
+
+
+========================================
+FICHIER : routes\web.php
+========================================
+
+<?php
+
+/*
+|=============================================================================
+| ROUTES WEB â€” Digital Agency SGRH
+|=============================================================================
+*/
+
+use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
+use App\Http\Controllers\Auth\LoginController;
+use App\Http\Controllers\Chef\CongeController as ChefCongeController;
+use App\Http\Controllers\Chef\DashboardController as ChefDashboardController;
+use App\Http\Controllers\Chef\EquipeController as ChefEquipeController;
+use App\Http\Controllers\Chef\PresenceController as ChefPresenceController;
+use App\Http\Controllers\Employee\CongeController as EmployeeCongeController;
+use App\Http\Controllers\Employee\DashboardController as EmployeeDashboardController;
+use App\Http\Controllers\Employee\PaieController as EmployeePaieController;
+use App\Http\Controllers\Employee\PresenceController as EmployeePresenceController;
+use App\Http\Controllers\Employee\ProfilController as EmployeeProfilController;
+use App\Http\Controllers\Gestion\AbsenceController;
+use App\Http\Controllers\Gestion\CongeController;
+use App\Http\Controllers\Gestion\ContratController;
+use App\Http\Controllers\Gestion\DepartementController;
+use App\Http\Controllers\Gestion\DocumentController;
+use App\Http\Controllers\Gestion\EmployeController;
+use App\Http\Controllers\Gestion\EvaluationController;
+use App\Http\Controllers\Gestion\OffreEmploiController;
+use App\Http\Controllers\Gestion\PointageController;
+use App\Http\Controllers\Gestion\PosteController;
+use App\Http\Controllers\Gestion\PresenceController;
+use App\Http\Controllers\Gestion\QrCodeController;
+use App\Http\Controllers\Gestion\SalaireController;
+use App\Http\Controllers\Gestion\UserController;
+use App\Http\Controllers\PublicController;
+use App\Http\Controllers\Rh\DashboardController as RhDashboardController;
+use App\Services\AbsenceService;
+use App\Http\Controllers\Admin\ParametreController;
+use Illuminate\Support\Facades\Route;
+
+// ==================================================================
+// PAGES PUBLIQUES
+// ==================================================================
+Route::get('/', [PublicController::class, 'index'])->name('home');
+Route::get('/offres', [PublicController::class, 'toutesLesOffres'])->name('offres.index');
+Route::get('/offre/{slug}', [PublicController::class, 'detailOffre'])->name('offres.show');
+
+// ==================================================================
+// AUTHENTIFICATION
+// ==================================================================
+Route::middleware('guest')->group(function () {
+    Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
+    Route::post('/login', [LoginController::class, 'login']);
+});
+
+// ==================================================================
+// ROUTES PROTÃ‰GÃ‰ES
+// ==================================================================
+Route::middleware('auth')->group(function () {
+
+    Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
+
+    // Redirection intelligente aprÃ¨s login
+    Route::get('/dashboard', function () {
+        $roleMapping = [
+            'Administrateur'      => 'admin.dashboard',
+            'Responsable RH'      => 'rh.dashboard',
+            'Chef de dÃ©partement' => 'chef.dashboard',
+            'EmployÃ©'             => 'employe.dashboard',
+            'Recruteur'           => 'recruteur.dashboard',
+        ];
+
+        $target = $roleMapping[auth()->user()->role->nom ?? ''] ?? null;
+
+        return $target
+            ? redirect()->route($target)
+            : 'Aucun rÃ´le assignÃ© Ã  votre compte.';
+    })->name('dashboard');
+
+    // ADMIN
+    Route::middleware('role:Administrateur')->group(function () {
+        // Tableau de bord administrateur
+        Route::get('/admin/dashboard', [AdminDashboardController::class, 'index'])
+            ->name('admin.dashboard');
+        // Accueil du module ParamÃ¨tres
+        Route::get('/admin/parametres', [ParametreController::class, 'index'])
+            ->name('admin.parametres.index');
+        // Liste des utilisateurs dans les paramÃ¨tres
+        Route::get('/admin/parametres/utilisateurs', [ParametreController::class, 'utilisateurs'])
+            ->name('admin.parametres.utilisateurs');
+        // Liste des rÃ´les du systÃ¨me
+        Route::get('/admin/parametres/roles', [ParametreController::class, 'roles'])
+            ->name('admin.parametres.roles');
+        // Liste des types de congÃ©s
+        Route::get('/admin/parametres/types-conges', [ParametreController::class, 'typesConges'])
+            ->name('admin.parametres.types-conges');
+        // Liste des jours fÃ©riÃ©s
+        Route::get('/admin/parametres/jours-feries', [ParametreController::class, 'joursFeries'])
+            ->name('admin.parametres.jours-feries');
+        // Enregistrement des paramÃ¨tres du systÃ¨me
+        Route::post('/admin/parametres', [ParametreController::class, 'update'])
+            ->name('admin.parametres.update');
+    });
+
+    // RH
+    Route::middleware('role:Responsable RH')->group(function () {
+        Route::get('/rh/dashboard', [RhDashboardController::class, 'index'])->name('rh.dashboard');
+    });
+
+    // CHEF DE DÃ‰PARTEMENT
+    Route::middleware('role:Chef de dÃ©partement')
+        ->prefix('chef')
+        ->name('chef.')
+        ->group(function () {
+            Route::get('/dashboard', [ChefDashboardController::class, 'index'])->name('dashboard');
+            Route::get('/equipe', [ChefEquipeController::class, 'index'])->name('equipe.index');
+            Route::get('/conges', [ChefCongeController::class, 'index'])->name('conges.index');
+            Route::get('/conges/{id}', [ChefCongeController::class, 'show'])->name('conges.show');
+            Route::post('/conges/{id}/approuver', [ChefCongeController::class, 'approuver'])->name('conges.approuver');
+            Route::post('/conges/{id}/refuser', [ChefCongeController::class, 'refuser'])->name('conges.refuser');
+            Route::get('/presences', [ChefPresenceController::class, 'index'])->name('presences.index');
+        });
+
+    // EMPLOYÃ‰
+    Route::middleware('role:EmployÃ©')
+        ->prefix('employe')
+        ->name('employe.')
+        ->group(function () {
+            Route::get('/dashboard', [EmployeeDashboardController::class, 'index'])->name('dashboard');
+            Route::get('/profil', [EmployeeProfilController::class, 'index'])->name('profil');
+            Route::get('/conges', [EmployeeCongeController::class, 'index'])->name('conges.index');
+            Route::get('/conges/create', [EmployeeCongeController::class, 'create'])->name('conges.create');
+            Route::post('/conges', [EmployeeCongeController::class, 'store'])->name('conges.store');
+            Route::get('/paie', [EmployeePaieController::class, 'index'])->name('paie.index');
+            Route::get('/presences', [EmployeePresenceController::class, 'index'])->name('presences.index');
+        });
+
+    // RECRUTEUR
+    Route::middleware('role:Recruteur')->group(function () {
+        Route::view('/recruteur/dashboard', 'recruteur.dashboard')->name('recruteur.dashboard');
+    });
+
+    // ==============================================================
+    // GESTION â€” Admin + RH
+    // ==============================================================
+    Route::middleware('role:Administrateur,Responsable RH')
+        ->prefix('gestion')
+        ->name('gestion.')
+        ->group(function () {
+
+            // ---------- EmployÃ©s ----------
+            Route::resource('employes', EmployeController::class);
+            // Page des dÃ©tails d'un employÃ©
+            Route::get('employes/{employe}/details', [EmployeController::class, 'details'])
+                ->name('employes.details');
+
+            Route::delete('employes/{employe}/supprimer-tout',
+                [EmployeController::class, 'supprimerTout'])
+                ->name('employes.supprimer-tout');
+
+            Route::delete('employes/{employe}/pointages',
+                [PointageController::class, 'supprimerParEmploye'])
+                ->name('employes.pointages.supprimer');
+
+            // ---------- Utilisateurs ----------
+            Route::prefix('users')->name('users.')->group(function () {
+                Route::get('/',              [UserController::class, 'index'])->name('index');
+                Route::get('/create',        [UserController::class, 'create'])->name('create');
+                Route::post('/',             [UserController::class, 'store'])->name('store');
+                Route::get('/{user}',        [UserController::class, 'show'])->name('show');
+                Route::get('/{user}/edit',   [UserController::class, 'edit'])->name('edit');
+                Route::put('/{user}',        [UserController::class, 'update'])->name('update');
+                Route::delete('/{user}',     [UserController::class, 'destroy'])->name('destroy');
+            });
+
+            // ---------- QR Codes ----------
+            Route::get ('employes/{employe}/qr',           [QrCodeController::class, 'show'])->name('employes.qr.show');
+            Route::post('employes/{employe}/qr/generer',   [QrCodeController::class, 'generer'])->name('employes.qr.generer');
+            Route::post('employes/{employe}/qr/revoquer',  [QrCodeController::class, 'revoquer'])->name('employes.qr.revoquer');
+            Route::get ('employes/{employe}/qr/image',     [QrCodeController::class, 'image'])->name('employes.qr.image');
+            Route::get ('employes/{employe}/qr/print',     [QrCodeController::class, 'imprimer'])->name('employes.qr.print');
+            Route::get ('employes/{employe}/qr/download',  [QrCodeController::class, 'downloadQr'])->name('employes.qr.download');
+
+            // ---------- DÃ©partements / Postes ----------
+            Route::resource('departements', DepartementController::class);
+            Route::resource('postes', PosteController::class);
+
+            // â­ API : postes par dÃ©partement (pour le formulaire employÃ©)
+            Route::get('api/postes/par-departement/{departementId}',
+                [PosteController::class, 'parDepartement'])
+                ->name('postes.par-departement');
+
+            // ---------- Contrats ----------
+            Route::get('contrats/{id}/download',   [ContratController::class, 'downloadPdf'])->name('contrats.download');
+            Route::get('contrats/{id}/fiche-paie', [ContratController::class, 'fichePaie'])->name('contrats.fiche-paie');
+            Route::resource('contrats', ContratController::class);
+
+            // ---------- Documents ----------
+            Route::get('employes/{employe}/documents',
+                [DocumentController::class, 'index'])->name('employes.documents.index');
+            Route::get('employes/{employe}/documents/create',
+                [DocumentController::class, 'create'])->name('employes.documents.create');
+
+            Route::get   ('documents',                     [DocumentController::class, 'index'])->name('documents.index');
+            Route::get   ('documents/create',              [DocumentController::class, 'create'])->name('documents.create');
+            Route::post  ('documents',                     [DocumentController::class, 'store'])->name('documents.store');
+            Route::get   ('documents/{document}',          [DocumentController::class, 'show'])->name('documents.show');
+            Route::get   ('documents/{document}/download', [DocumentController::class, 'download'])->name('documents.download');
+            Route::get   ('documents/{document}/preview',  [DocumentController::class, 'preview'])->name('documents.preview');
+            Route::get   ('documents/{document}/edit',     [DocumentController::class, 'edit'])->name('documents.edit');
+            Route::put   ('documents/{document}',          [DocumentController::class, 'update'])->name('documents.update');
+            Route::delete('documents/{document}',          [DocumentController::class, 'destroy'])->name('documents.destroy');
+
+            // ---------- Offres d'emploi ----------
+            Route::prefix('offres')->name('offres.')->group(function () {
+                Route::get('/',                  [OffreEmploiController::class, 'index'])->name('index');
+                Route::get('/create',            [OffreEmploiController::class, 'create'])->name('create');
+                Route::post('/',                 [OffreEmploiController::class, 'store'])->name('store');
+                Route::get('/{offre}',           [OffreEmploiController::class, 'show'])->name('show');
+                Route::get('/{offre}/edit',      [OffreEmploiController::class, 'edit'])->name('edit');
+                Route::put('/{offre}',           [OffreEmploiController::class, 'update'])->name('update');
+                Route::delete('/{offre}',        [OffreEmploiController::class, 'destroy'])->name('destroy');
+                Route::post('/{offre}/publier',  [OffreEmploiController::class, 'publier'])->name('publier');
+                Route::post('/{offre}/archiver', [OffreEmploiController::class, 'archiver'])->name('archiver');
+            });
+
+            // ---------- PrÃ©sences / CongÃ©s ----------
+            Route::resource('presences', PresenceController::class);
+            Route::resource('conges', CongeController::class);
+            Route::post('conges/{conge}/approuver', [CongeController::class, 'approuver'])->name('conges.approuver');
+            Route::post('conges/{conge}/refuser',   [CongeController::class, 'refuser'])->name('conges.refuser');
+
+            // ---------- Salaires / Ã‰valuations ----------
+            Route::resource('salaires', SalaireController::class);
+            Route::resource('evaluations', EvaluationController::class);
+
+            // ---------- Pointage QR ----------
+            Route::get ('pointage/scanner',     [PointageController::class, 'scanner'])->name('pointage.scanner');
+            Route::post('pointage/enregistrer', [PointageController::class, 'enregistrer'])->name('pointage.enregistrer');
+            Route::get ('pointage/liste',       [PointageController::class, 'liste'])->name('pointage.liste');
+            Route::get ('pointage/historique',    [PointageController::class, 'historique'])->name('pointage.historique');
+            Route::get ('pointage/anomalies',     [PointageController::class, 'anomalies'])->name('pointage.anomalies');
+            Route::get ('pointage/{id}/corriger', [PointageController::class, 'corriger'])->name('pointage.corriger');
+            Route::put ('pointage/{id}/corriger', [PointageController::class, 'updateCorrection'])->name('pointage.updateCorrection');
+            Route::delete('pointage/{id}',        [PointageController::class, 'supprimerPointage'])->name('pointage.supprimer');
+
+            // ---------- Absences ----------
+            Route::post('absences/detecter', function (AbsenceService $service) {
+                $resultat = $service->detecterAbsences();
+                return redirect()
+                    ->back()
+                    ->with('success', "DÃ©tection lancÃ©e : {$resultat['crees']} crÃ©Ã©e(s), {$resultat['ignores']} ignorÃ©e(s).");
+            })->name('absences.detecter');
+
+            Route::resource('absences', AbsenceController::class);
+            Route::post('absences/{absence}/approuver', [AbsenceController::class, 'approuver'])->name('absences.approuver');
+            Route::post('absences/{absence}/refuser',   [AbsenceController::class, 'refuser'])->name('absences.refuser');
+        });
+});
+
+
+========================================
+FICHIER : resources\views\partials\sidebar.blade.php
+========================================
+
+@php
+    // RÃ©cupÃ©rer les informations gÃ©nÃ©rales de l'entreprise
+    $nomEntreprise = \App\Models\Parametre::obtenir(
+        'general',
+        'nom_entreprise',
+        'DIGITAL AGENCY'
+    );
+
+    $logoEntreprise = \App\Models\Parametre::obtenir(
+        'general',
+        'logo_entreprise'
+    );
+    $roleMapping = [
+        'Administrateur'      => 'admin',
+        'Responsable RH'      => 'rh',
+        'Chef de dÃ©partement' => 'chef',
+        'EmployÃ©'             => 'employe',
+    ];
+
+    $roleNom      = Auth::user()->role->nom ?? null;
+    $role         = $roleMapping[$roleNom] ?? 'invite';
+    $currentRoute = request()->route()->getName();
+    $isAdminOrRh  = in_array($role, ['admin', 'rh']);
+
+@endphp
+
+{{-- Bouton hamburger (mobile) --}}
+<button id="sidebar-toggle"
+    aria-label="Ouvrir le menu"
+    class="lg:hidden fixed top-4 left-4 z-50 bg-gradient-to-br from-purple-600 to-pink-600 text-white p-2.5 rounded-xl shadow-lg shadow-purple-600/40 transition-transform hover:scale-105">
+    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/>
+    </svg>
+</button>
+
+{{-- Overlay mobile --}}
+<div id="sidebar-overlay" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-30 lg:hidden"></div>
+
+{{-- Sidebar --}}
+<aside id="sidebar"
+    class="fixed lg:sticky lg:top-0 inset-y-0 left-0 z-40 w-64 lg:h-screen bg-gradient-to-b from-slate-900 via-purple-950 to-slate-900 text-white flex flex-col shrink-0 transform -translate-x-full lg:translate-x-0 transition-transform duration-300 sidebar-scroll ring-1 ring-inset ring-white/5">
+
+    {{-- Logo dynamique de l'entreprise --}}
+    <div class="h-16 flex items-center gap-3 px-5 border-b border-white/5 shrink-0">
+
+        {{-- Afficher le logo enregistrÃ© --}}
+        @if (!empty($logoEntreprise))
+            <div class="w-11 h-11 rounded-lg bg-purple-300 flex items-center justify-center overflow-hidden shrink-0 shadow-lg shadow-purple-500/30">
+                <img
+                    src="{{ asset('storage/' . $logoEntreprise) }}"
+                    alt="Logo {{ $nomEntreprise }}"
+                    class="w-full h-full object-contain"
+                >
+            </div>
+        @else
+            {{-- Logo par dÃ©faut si aucune image n'est enregistrÃ©e --}}
+            <div class="bg-gradient-to-br from-purple-500 to-pink-500 p-2 rounded-xl shadow-lg shadow-purple-500/30">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
+                </svg>
+            </div>
+        @endif
+
+        {{-- Nom dynamique de l'entreprise --}}
+        <div class="flex-1 min-w-0">
+            <span class="font-bold text-sm tracking-wide text-white block truncate">
+                {{ $nomEntreprise }}
+            </span>
+
+            <span class="text-[9px] text-purple-300 uppercase tracking-widest font-medium">
+                Espace de gestion
+            </span>
+        </div>
+
+    </div>
+
+    {{-- Carte profil --}}
+    <div class="px-4 py-4 border-b border-white/5 shrink-0">
+        <div class="flex items-center gap-3">
+            <div class="relative">
+                <div class="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold text-sm shadow-lg shadow-purple-500/30 ring-2 ring-white/10">
+                    {{ strtoupper(substr(Auth::user()->name ?? 'NA', 0, 2)) }}
+                </div>
+                <span class="absolute bottom-0 right-0 w-3 h-3 bg-emerald-400 border-2 border-slate-900 rounded-full"></span>
+            </div>
+            <div class="flex-1 min-w-0">
+                <p class="text-sm font-semibold text-white truncate">{{ Auth::user()->name ?? 'Utilisateur' }}</p>
+                <p class="text-[10px] text-purple-300 truncate uppercase tracking-wider font-medium">{{ $roleNom ?? 'Sans rÃ´le' }}</p>
+            </div>
+        </div>
+    </div>
+
+    {{-- Navigation --}}
+    <nav class="flex-1 overflow-y-auto py-3 px-3 sidebar-nav">
+
+        {{-- ============================================= --}}
+        {{-- ADMIN ou RH --}}
+        {{-- ============================================= --}}
+        @if($isAdminOrRh)
+
+            <p class="text-[9px] uppercase tracking-[0.15em] text-purple-400 px-3 py-2 font-bold">Principal</p>
+
+            <a href="{{ $role === 'admin' ? route('admin.dashboard') : route('rh.dashboard') }}"
+               class="sidebar-link {{ in_array($currentRoute, ['admin.dashboard', 'rh.dashboard']) ? 'active' : '' }}">
+                <svg class="h-4 w-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/>
+                </svg>
+                <span>Tableau de bord</span>
+            </a>
+
+            {{-- PERSONNEL --}}
+            <p class="text-[9px] uppercase tracking-[0.15em] text-purple-400 px-3 py-2 mt-5 font-bold">Personnel</p>
+
+            <a href="{{ route('gestion.employes.index') }}"
+               class="sidebar-link {{ request()->routeIs('gestion.employes.*') ? 'active' : '' }}">
+                <svg class="h-4 w-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
+                </svg>
+                <span>EmployÃ©s</span>
+            </a>
+
+            <a href="{{ route('gestion.users.index') }}"
+               class="sidebar-link {{ request()->routeIs('gestion.users.*') ? 'active' : '' }}">
+                <svg class="h-4 w-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/>
+                </svg>
+                <span>Utilisateurs</span>
+            </a>
+
+            <a href="{{ route('gestion.departements.index') }}"
+               class="sidebar-link {{ request()->routeIs('gestion.departements.*') ? 'active' : '' }}">
+                <svg class="h-4 w-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+                </svg>
+                <span>DÃ©partements</span>
+            </a>
+
+            <a href="{{ route('gestion.contrats.index') }}"
+               class="sidebar-link {{ request()->routeIs('gestion.contrats.*') ? 'active' : '' }}">
+                <svg class="h-4 w-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                </svg>
+                <span>Contrats</span>
+            </a>
+
+            <a href="{{ route('gestion.documents.index') }}"
+               class="sidebar-link {{ request()->routeIs('gestion.documents.*') ? 'active' : '' }}">
+                <svg class="h-4 w-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/>
+                </svg>
+                <span>Documents</span>
+            </a>
+
+            {{-- RECRUTEMENT --}}
+            <p class="text-[9px] uppercase tracking-[0.15em] text-purple-400 px-3 py-2 mt-5 font-bold">Recrutement</p>
+
+            <a href="{{ route('gestion.offres.index') }}"
+               class="sidebar-link {{ request()->routeIs('gestion.offres.*') ? 'active' : '' }}">
+                <svg class="h-4 w-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                </svg>
+                <span>Offres d'emploi</span>
+                <span class="ml-auto text-[8px] font-bold bg-purple-500/30 text-purple-200 px-1.5 py-0.5 rounded uppercase tracking-wider ring-1 ring-inset ring-purple-400/30">Public</span>
+            </a>
+
+            {{-- POINTAGE --}}
+            <p class="text-[9px] uppercase tracking-[0.15em] text-purple-400 px-3 py-2 mt-5 font-bold">Pointage</p>
+
+            <a href="{{ route('gestion.pointage.scanner') }}"
+               class="sidebar-link {{ request()->routeIs('gestion.pointage.scanner') ? 'active' : '' }}">
+                <svg class="h-4 w-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                </svg>
+                <span>Scanner QR</span>
+                <span class="ml-auto text-[8px] font-bold bg-emerald-500/30 text-emerald-200 px-1.5 py-0.5 rounded uppercase tracking-wider ring-1 ring-inset ring-emerald-400/30">NEW</span>
+            </a>
+
+            <a href="{{ route('gestion.pointage.historique') }}"
+               class="sidebar-link {{ request()->routeIs('gestion.pointage.historique') ? 'active' : '' }}">
+                <svg class="h-4 w-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                <span>Historique</span>
+            </a>
+
+            <a href="{{ route('gestion.pointage.anomalies') }}"
+               class="sidebar-link {{ request()->routeIs('gestion.pointage.anomalies') ? 'active' : '' }}">
+                <svg class="h-4 w-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                <span>Anomalies</span>
+            </a>
+
+            {{-- OPÃ‰RATIONS --}}
+            <p class="text-[9px] uppercase tracking-[0.15em] text-purple-400 px-3 py-2 mt-5 font-bold">OpÃ©rations</p>
+
+            <a href="{{ route('gestion.absences.index') }}"
+               class="sidebar-link {{ request()->routeIs('gestion.absences.*') ? 'active' : '' }}">
+                <svg class="h-4 w-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/>
+                </svg>
+                <span>Absences</span>
+            </a>
+
+            <a href="{{ route('gestion.conges.index') }}"
+               class="sidebar-link {{ request()->routeIs('gestion.conges.*') ? 'active' : '' }}">
+                <svg class="h-4 w-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                </svg>
+                <span>CongÃ©s</span>
+            </a>
+
+            <a href="{{ route('gestion.presences.index') }}"
+               class="sidebar-link {{ request()->routeIs('gestion.presences.*') ? 'active' : '' }}">
+                <svg class="h-4 w-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                <span>PrÃ©sences</span>
+            </a>
+
+            <a href="{{ route('gestion.salaires.index') }}"
+               class="sidebar-link {{ request()->routeIs('gestion.salaires.*') ? 'active' : '' }}">
+                <svg class="h-4 w-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                <span>Salaires</span>
+            </a>
+
+            <a href="{{ route('gestion.evaluations.index') }}"
+               class="sidebar-link {{ request()->routeIs('gestion.evaluations.*') ? 'active' : '' }}">
+                <svg class="h-4 w-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"/>
+                </svg>
+                <span>Ã‰valuations</span>
+            </a>
+            {{-- PARAMÃˆTRES ADMINISTRATEUR --}}
+            @if($role === 'admin')
+                    
+                <p class="text-[9px] uppercase tracking-[0.15em] text-purple-400 px-3 py-2 mt-5 font-bold">
+                    Administration
+                </p>
+            
+                <a href="{{ route('admin.parametres.index') }}"
+                   class="sidebar-link {{ request()->routeIs('admin.parametres.*') ? 'active' : '' }}">
+            
+                    {{-- IcÃ´ne paramÃ¨tres --}}
+                    <svg class="h-4 w-4 shrink-0"
+                         fill="none"
+                         stroke="currentColor"
+                         viewBox="0 0 24 24"
+                         stroke-width="2">
+                        <path stroke-linecap="round"
+                              stroke-linejoin="round"
+                              d="M12 8a4 4 0 100 8 4 4 0 000-8z
+                                 M19.4 15a1.65 1.65 0 00.33 1.82l.06.06
+                                 -1.7 1.7-.06-.06a1.65 1.65 0 00-1.82-.33
+                                 1.65 1.65 0 00-1 1.51V20h-2.4v-.1
+                                 a1.65 1.65 0 00-1-1.51 1.65 1.65 0 00-1.82.33
+                                 l-.06.06-1.7-1.7.06-.06A1.65 1.65 0 008.6 15
+                                 a1.65 1.65 0 00-1.51-1H7v-2.4h.1
+                                 a1.65 1.65 0 001.51-1 1.65 1.65 0 00-.33-1.82
+                                 l-.06-.06 1.7-1.7.06.06a1.65 1.65 0 001.82.33
+                                 1.65 1.65 0 001-1.51V6h2.4v.1
+                                 a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33
+                                 l.06-.06 1.7 1.7-.06.06A1.65 1.65 0 0019.4 10
+                                 a1.65 1.65 0 001.51 1H21v2.4h-.1
+                                 a1.65 1.65 0 00-1.5 1.6z"/>
+                    </svg>
+                
+                    <span>ParamÃ¨tres</span>
+                </a>
+            
+            @endif
+        @endif
+
+        {{-- CHEF DE DÃ‰PARTEMENT --}}
+        @if($role === 'chef')
+            <p class="text-[9px] uppercase tracking-[0.15em] text-purple-400 px-3 py-2 font-bold">Chef de DÃ©partement</p>
+
+            <a href="{{ route('chef.dashboard') }}"
+               class="sidebar-link {{ $currentRoute === 'chef.dashboard' ? 'active' : '' }}">
+                <svg class="h-4 w-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/>
+                </svg>
+                <span>Tableau de bord</span>
+            </a>
+
+            <a href="{{ route('chef.equipe.index') }}"
+               class="sidebar-link {{ request()->routeIs('chef.equipe.*') ? 'active' : '' }}">
+                <svg class="h-4 w-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
+                </svg>
+                <span>Mon Ã©quipe</span>
+            </a>
+
+            <a href="{{ route('chef.conges.index') }}"
+               class="sidebar-link {{ request()->routeIs('chef.conges.*') ? 'active' : '' }}">
+                <svg class="h-4 w-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                </svg>
+                <span>Valider les congÃ©s</span>
+            </a>
+
+            <a href="{{ route('chef.presences.index') }}"
+               class="sidebar-link {{ request()->routeIs('chef.presences.*') ? 'active' : '' }}">
+                <svg class="h-4 w-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                <span>PrÃ©sences</span>
+            </a>
+        @endif
+
+        {{-- EMPLOYÃ‰ --}}
+        @if($role === 'employe')
+            <p class="text-[9px] uppercase tracking-[0.15em] text-purple-400 px-3 py-2 font-bold">Mon Espace</p>
+
+            <a href="{{ route('employe.dashboard') }}"
+               class="sidebar-link {{ $currentRoute === 'employe.dashboard' ? 'active' : '' }}">
+                <svg class="h-4 w-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/>
+                </svg>
+                <span>Tableau de bord</span>
+            </a>
+
+            <a href="{{ route('employe.profil') }}"
+               class="sidebar-link {{ $currentRoute === 'employe.profil' ? 'active' : '' }}">
+                <svg class="h-4 w-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                </svg>
+                <span>Mon profil</span>
+            </a>
+
+            <p class="text-[9px] uppercase tracking-[0.15em] text-purple-400 px-3 py-2 mt-5 font-bold">Ma Vie Pro</p>
+
+            <a href="{{ route('employe.conges.index') }}"
+               class="sidebar-link {{ request()->routeIs('employe.conges.*') ? 'active' : '' }}">
+                <svg class="h-4 w-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                </svg>
+                <span>Mes congÃ©s</span>
+            </a>
+
+            <a href="{{ route('employe.presences.index') }}"
+               class="sidebar-link {{ request()->routeIs('employe.presences.*') ? 'active' : '' }}">
+                <svg class="h-4 w-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                <span>Mes prÃ©sences</span>
+            </a>
+
+            <a href="{{ route('employe.paie.index') }}"
+               class="sidebar-link {{ request()->routeIs('employe.paie.*') ? 'active' : '' }}">
+                <svg class="h-4 w-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                <span>Mes fiches de paie</span>
+            </a>
+
+            <a href="{{ route('employe.conges.create') }}"
+               class="mt-4 flex items-center gap-2 bg-gradient-to-r from-purple-500/20 to-pink-500/20 hover:from-purple-500/30 hover:to-pink-500/30 backdrop-blur-sm border border-purple-400/30 rounded-xl px-3 py-2.5 transition-all duration-200 hover:scale-[1.02] group">
+                <div class="w-7 h-7 rounded-lg bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center shrink-0 group-hover:rotate-90 transition-transform shadow-lg shadow-purple-500/30">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/>
+                    </svg>
+                </div>
+                <span class="text-xs font-bold text-white">Demander un congÃ©</span>
+            </a>
+        @endif
+
+        {{-- DÃ©connexion --}}
+        <div class="mt-4 pt-4 border-t border-white/15">
+            <form action="{{ route('logout') }}" method="POST">
+                @csrf
+                <button type="submit" class="sidebar-link w-full text-red-300 hover:text-red-200 hover:bg-red-500/20">
+                    <svg class="h-4 w-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+                    </svg>
+                    <span>DÃ©connexion</span>
+                </button>
+            </form>
+        </div>
+
+    </nav>
+
+</aside>
+
+<style>
+    .sidebar-link {
+        display: flex;
+        align-items: center;
+        gap: 0.65rem;
+        padding: 0.55rem 0.75rem;
+        border-radius: 0.65rem;
+        font-size: 0.825rem;
+        font-weight: 500;
+        color: rgba(233, 213, 255, 0.75);
+        transition: all 0.15s ease;
+        margin-bottom: 0.125rem;
+        position: relative;
+    }
+
+    .sidebar-link:hover {
+        background-color: rgba(255, 255, 255, 0.06);
+        color: #ffffff;
+        transform: translateX(2px);
+    }
+
+    .sidebar-link.active {
+        background: linear-gradient(90deg, rgba(168, 85, 247, 0.25) 0%, rgba(236, 72, 153, 0.15) 100%);
+        color: #ffffff;
+        font-weight: 600;
+        box-shadow: inset 0 0 0 1px rgba(168, 85, 247, 0.3);
+    }
+
+    .sidebar-link.active::before {
+        content: '';
+        position: absolute;
+        left: -0.75rem;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 3px;
+        height: 60%;
+        background: linear-gradient(180deg, #a855f7, #ec4899);
+        border-radius: 0 3px 3px 0;
+    }
+
+    .sidebar-nav,
+    .sidebar-scroll {
+        scrollbar-width: none;
+    }
+
+    .sidebar-nav::-webkit-scrollbar,
+    .sidebar-scroll::-webkit-scrollbar {
+        display: none;
+    }
+</style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const toggle  = document.getElementById('sidebar-toggle');
+        const sidebar = document.getElementById('sidebar');
+        const overlay = document.getElementById('sidebar-overlay');
+
+        if (toggle && sidebar && overlay) {
+            toggle.addEventListener('click', () => {
+                sidebar.classList.toggle('-translate-x-full');
+                overlay.classList.toggle('hidden');
+            });
+
+            overlay.addEventListener('click', () => {
+                sidebar.classList.add('-translate-x-full');
+                overlay.classList.add('hidden');
+            });
+
+            sidebar.querySelectorAll('a').forEach(link => {
+                link.addEventListener('click', () => {
+                    if (window.innerWidth < 1024) {
+                        sidebar.classList.add('-translate-x-full');
+                        overlay.classList.add('hidden');
+                    }
+                });
+            });
+        }
+    });
+</script>
