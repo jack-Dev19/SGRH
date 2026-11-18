@@ -149,7 +149,7 @@
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             <div>
                                 <label for="salaire_min" class="block text-sm text-slate-600 mb-2">
-                                    Salaire minimum (Ar)
+                                    Salaire minimum (MGA)
                                 </label>
                             
                                 <input
@@ -170,7 +170,7 @@
                         
                             <div>
                                 <label for="salaire_max" class="block text-sm text-slate-600 mb-2">
-                                    Salaire maximum (Ar)
+                                    Salaire maximum (MGA)
                                 </label>
                             
                                 <input

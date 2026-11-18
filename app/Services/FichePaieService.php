@@ -10,6 +10,9 @@ use Illuminate\Support\Facades\Log;
 
 class FichePaieService
 {
+    /**
+     * Taux de cotisations et d'imposition.
+     */
     protected array $taux = [
         'cnaps_salarie'   => 0.01,
         'cnaps_employeur' => 0.13,
@@ -20,42 +23,61 @@ class FichePaieService
 
     protected string $vue = 'gestion.contrats.fiche-paie';
 
-    public function generer(Contrat $contrat, int $mois, int $annee): DomPdfInstance
-    {
-        // 🔍 Log étape 1 : chargement
-        Log::info("[FichePaie] Début génération pour contrat {$contrat->numero} - {$mois}/{$annee}");
+    /**
+     * Générer la fiche de paie PDF.
+     */
+    public function generer(
+        Contrat $contrat,
+        int $mois,
+        int $annee
+    ): DomPdfInstance {
+        Log::info(
+            "[FichePaie] Début génération pour contrat {$contrat->numero} - {$mois}/{$annee}"
+        );
 
         try {
             $contrat->load(['employe.departement', 'employe.poste']);
         } catch (\Throwable $e) {
-            Log::error("[FichePaie] Erreur chargement relations : " . $e->getMessage());
+            Log::error(
+                "[FichePaie] Erreur chargement relations : " . $e->getMessage()
+            );
+
             throw $e;
         }
 
         $employe = $contrat->employe;
 
         if (!$employe) {
-            throw new \Exception("Impossible de générer la fiche de paie : aucun employé associé au contrat.");
+            throw new \Exception(
+                "Impossible de générer la fiche de paie : aucun employé associé au contrat."
+            );
         }
 
-        // 🔍 Log étape 2 : calculs
+        // Calculer les montants de la fiche de paie en MGA.
         try {
             $donnees = $this->calculerPaie($contrat, $mois, $annee);
-            Log::info("[FichePaie] Calculs OK", ['net' => $donnees['salaireNet']]);
-        } catch (\Throwable $e) {
-            Log::error("[FichePaie] Erreur calculs : " . $e->getMessage(), [
-                'trace' => $e->getTraceAsString(),
+
+            Log::info("[FichePaie] Calculs OK", [
+                'devise_contrat' => $contrat->devise,
+                'salaire_base_mga' => $donnees['salaireBase'],
+                'net' => $donnees['salaireNet'],
             ]);
+        } catch (\Throwable $e) {
+            Log::error(
+                "[FichePaie] Erreur calculs : " . $e->getMessage(),
+                ['trace' => $e->getTraceAsString()]
+            );
+
             throw $e;
         }
 
-        // 🔍 Log étape 3 : rendu PDF
+        // Générer le document PDF.
         try {
             /** @var DomPdfInstance $pdf */
             $pdf = Pdf::loadView($this->vue, array_merge($donnees, [
-                    'contrat' => $contrat,
-                    'employe' => $employe,
-                ]))
+                'contrat' => $contrat,
+                'employe' => $employe,
+            ]))
                 ->setPaper('A4', 'portrait')
                 ->setOption('isRemoteEnabled', true)
                 ->setOption('isHtml5ParserEnabled', true)
@@ -63,103 +85,237 @@ class FichePaieService
                 ->setOption('dpi', 150)
                 ->setOption('enable_font_subsetting', true);
 
-            // Force le rendu pour détecter les erreurs DomPDF
+            // Vérifier le rendu avant le téléchargement.
             $pdf->output();
 
-            Log::info("[FichePaie] PDF généré avec succès pour contrat {$contrat->numero}");
+            Log::info(
+                "[FichePaie] PDF généré avec succès pour contrat {$contrat->numero}"
+            );
 
             return $pdf;
 
         } catch (\Throwable $e) {
-            Log::error("[FichePaie] Erreur rendu PDF : " . $e->getMessage(), [
-                'file'  => $e->getFile(),
-                'line'  => $e->getLine(),
-                'trace' => $e->getTraceAsString(),
-            ]);
+            Log::error(
+                "[FichePaie] Erreur rendu PDF : " . $e->getMessage(),
+                [
+                    'file' => $e->getFile(),
+                    'line' => $e->getLine(),
+                    'trace' => $e->getTraceAsString(),
+                ]
+            );
 
-            throw $e; // 🔍 propage l'erreur réelle pour debug
+            throw $e;
         }
     }
 
-    public function download(Contrat $contrat, int $mois, int $annee)
-    {
+    /**
+     * Télécharger la fiche de paie.
+     */
+    public function download(
+        Contrat $contrat,
+        int $mois,
+        int $annee
+    ) {
         /** @var DomPdfInstance $pdf */
         $pdf = $this->generer($contrat, $mois, $annee);
 
-        return $pdf->download($this->getNomFichier($contrat, $mois, $annee));
+        return $pdf->download(
+            $this->getNomFichier($contrat, $mois, $annee)
+        );
     }
 
-    public function getNomFichier(Contrat $contrat, int $mois, int $annee): string
-    {
-        $nomEmploye = str_replace(' ', '-', $contrat->employe?->nom_complet ?? 'employe');
-        $periode    = sprintf('%04d-%02d', $annee, $mois);
+    /**
+     * Construire le nom du fichier PDF.
+     */
+    public function getNomFichier(
+        Contrat $contrat,
+        int $mois,
+        int $annee
+    ): string {
+        $nomEmploye = str_replace(
+            ' ',
+            '-',
+            $contrat->employe?->nom_complet ?? 'employe'
+        );
+
+        $periode = sprintf('%04d-%02d', $annee, $mois);
 
         return "fiche-paie-{$periode}-{$contrat->numero}-{$nomEmploye}.pdf";
     }
 
-    protected function calculerPaie(Contrat $contrat, int $mois, int $annee): array
-    {
-        $salaireBase = (float) $contrat->salaire;
+    /**
+     * Calculer les éléments de paie.
+     *
+     * Tous les calculs sont réalisés en MGA.
+     */
+    protected function calculerPaie(
+        Contrat $contrat,
+        int $mois,
+        int $annee
+    ): array {
+        // Convertir le salaire du contrat en Ariary (MGA).
+        $conversionService = app(ConversionDeviseService::class);
 
-        $ancienneteAnnees = $this->getAncienneteAnnees($contrat);
-        $tauxAnciennete   = min($ancienneteAnnees * 0.01, 0.20);
-        $primeAnciennete  = round($salaireBase * $tauxAnciennete, 2);
+        $deviseContrat = strtoupper($contrat->devise ?? 'MGA');
 
-        $primeTransport = 100000;
-        $primeLogement  = 50000;
+        $salaireBase = $conversionService->convertirEntreDevises(
+            (float) $contrat->salaire,
+            $deviseContrat,
+            'MGA'
+        );
 
-        $salaireBrut = $salaireBase + $primeAnciennete + $primeTransport + $primeLogement;
+        // Arrondir le salaire converti à deux décimales.
+        $salaireBase = round($salaireBase, 2);
 
-        $cnapsSalarie = round($salaireBrut * $this->taux['cnaps_salarie'], 2);
-        $ostieSalarie = round($salaireBrut * $this->taux['ostie_salarie'], 2);
-        $totalCotisationsSalarie = $cnapsSalarie + $ostieSalarie;
+        Log::info("[FichePaie] Conversion salaire en MGA", [
+            'salaire_original' => $contrat->salaire,
+            'devise_originale' => $deviseContrat,
+            'salaire_mga' => $salaireBase,
+        ]);
 
-        $baseImposable = $salaireBrut - $totalCotisationsSalarie;
-        $irsa = round($baseImposable * $this->taux['irsa_taux'], 2);
-        $totalRetenues = $totalCotisationsSalarie + $irsa;
+        
+        // Déterminer si le contrat est une convention de stage.
+        $estStage = mb_strtolower(trim((string) $contrat->type)) === 'stage';
+        
+        // Calcul de l'ancienneté.
+        // Un stagiaire reçoit une gratification : on ne lui applique
+        // pas automatiquement une prime d'ancienneté.
+        $ancienneteAnnees = $estStage
+            ? 0
+            : $this->getAncienneteAnnees($contrat);
+        
+        $tauxAnciennete = $estStage
+            ? 0
+            : min($ancienneteAnnees * 0.01, 0.20);
+        
+        $primeAnciennete = round(
+            $salaireBase * $tauxAnciennete,
+            2
+        );
+        
+        // Primes exprimées en Ariary.
+        // Pour un stage, le montant du contrat représente la gratification.
+        // Les primes fixes ne sont donc pas ajoutées automatiquement.
+        $primeTransport = $estStage ? 0 : 100000;
+        $primeLogement = $estStage ? 0 : 50000;
+        
+        // Salaire brut ou gratification brute.
+        $salaireBrut = (
+            $salaireBase
+            + $primeAnciennete
+            + $primeTransport
+            + $primeLogement
+        );
+        
+        // Cotisations salariales.
+        // La convention de stage exclut explicitement la CNAPS et l'OSTIE.
+        $cnapsSalarie = $estStage
+            ? 0
+            : round($salaireBrut * $this->taux['cnaps_salarie'], 2);
+        
+        $ostieSalarie = $estStage
+            ? 0
+            : round($salaireBrut * $this->taux['ostie_salarie'], 2);
+        
+        $totalCotisationsSalarie = (
+            $cnapsSalarie + $ostieSalarie
+        );
 
-        $salaireNet = $salaireBrut - $totalRetenues;
 
-        $cnapsEmployeur = round($salaireBrut * $this->taux['cnaps_employeur'], 2);
-        $ostieEmployeur = round($salaireBrut * $this->taux['ostie_employeur'], 2);
-        $totalCotisationsPatronales = $cnapsEmployeur + $ostieEmployeur;
+        // Calcul de l'impôt.
+        $baseImposable = (
+            $salaireBrut - $totalCotisationsSalarie
+        );
 
-        $coutTotal = $salaireBrut + $totalCotisationsPatronales;
+        $irsa = round(
+            $baseImposable * $this->taux['irsa_taux'],
+            2
+        );
 
+        $totalRetenues = (
+            $totalCotisationsSalarie + $irsa
+        );
+
+        // Salaire net.
+        $salaireNet = (
+            $salaireBrut - $totalRetenues
+        );
+
+        // Cotisations patronales.
+        $cnapsEmployeur = round(
+            $salaireBrut * $this->taux['cnaps_employeur'],
+            2
+        );
+
+        $ostieEmployeur = round(
+            $salaireBrut * $this->taux['ostie_employeur'],
+            2
+        );
+
+        $totalCotisationsPatronales = (
+            $cnapsEmployeur + $ostieEmployeur
+        );
+
+        $coutTotal = (
+            $salaireBrut + $totalCotisationsPatronales
+        );
+
+        // Noms des mois.
         $moisNoms = [
-            1 => 'Janvier', 2 => 'Février', 3 => 'Mars', 4 => 'Avril',
-            5 => 'Mai', 6 => 'Juin', 7 => 'Juillet', 8 => 'Août',
-            9 => 'Septembre', 10 => 'Octobre', 11 => 'Novembre', 12 => 'Décembre',
+            1 => 'Janvier',
+            2 => 'Février',
+            3 => 'Mars',
+            4 => 'Avril',
+            5 => 'Mai',
+            6 => 'Juin',
+            7 => 'Juillet',
+            8 => 'Août',
+            9 => 'Septembre',
+            10 => 'Octobre',
+            11 => 'Novembre',
+            12 => 'Décembre',
         ];
 
         return [
-            'mois'                       => $mois,
-            'annee'                      => $annee,
-            'moisLabel'                  => $moisNoms[$mois] ?? 'Inconnu',
-            'periodeLabel'               => sprintf('%s %d', $moisNoms[$mois] ?? '', $annee),
-            'salaireBase'                => $salaireBase,
-            'ancienneteAnnees'           => $ancienneteAnnees,
-            'tauxAnciennete'             => $tauxAnciennete,
-            'primeAnciennete'            => $primeAnciennete,
-            'primeTransport'             => $primeTransport,
-            'primeLogement'              => $primeLogement,
-            'salaireBrut'                => $salaireBrut,
-            'cnapsSalarie'               => $cnapsSalarie,
-            'ostieSalarie'               => $ostieSalarie,
-            'totalCotisationsSalarie'    => $totalCotisationsSalarie,
-            'baseImposable'              => $baseImposable,
-            'irsa'                       => $irsa,
-            'totalRetenues'              => $totalRetenues,
-            'salaireNet'                 => $salaireNet,
-            'cnapsEmployeur'             => $cnapsEmployeur,
-            'ostieEmployeur'             => $ostieEmployeur,
+            'mois' => $mois,
+            'annee' => $annee,
+            'moisLabel' => $moisNoms[$mois] ?? 'Inconnu',
+            'periodeLabel' => sprintf(
+                '%s %d',
+                $moisNoms[$mois] ?? '',
+                $annee
+            ),
+
+            'salaireBase' => $salaireBase,
+            'ancienneteAnnees' => $ancienneteAnnees,
+            'tauxAnciennete' => $tauxAnciennete,
+            'primeAnciennete' => $primeAnciennete,
+            'primeTransport' => $primeTransport,
+            'primeLogement' => $primeLogement,
+            'salaireBrut' => $salaireBrut,
+
+            'cnapsSalarie' => $cnapsSalarie,
+            'ostieSalarie' => $ostieSalarie,
+            'totalCotisationsSalarie' => $totalCotisationsSalarie,
+
+            'baseImposable' => $baseImposable,
+            'irsa' => $irsa,
+            'totalRetenues' => $totalRetenues,
+            'salaireNet' => $salaireNet,
+
+            'cnapsEmployeur' => $cnapsEmployeur,
+            'ostieEmployeur' => $ostieEmployeur,
             'totalCotisationsPatronales' => $totalCotisationsPatronales,
-            'coutTotal'                  => $coutTotal,
+            'coutTotal' => $coutTotal,
         ];
     }
 
-    protected function getAncienneteAnnees(Contrat $contrat): int
-    {
+    /**
+     * Calculer l'ancienneté de l'employé.
+     */
+    protected function getAncienneteAnnees(
+        Contrat $contrat
+    ): int {
         if (!$contrat->date_debut) {
             return 0;
         }
@@ -167,7 +323,10 @@ class FichePaieService
         try {
             return Carbon::parse($contrat->date_debut)->diffInYears(now());
         } catch (\Throwable $e) {
-            Log::warning("[FichePaie] Erreur calcul ancienneté : " . $e->getMessage());
+            Log::warning(
+                "[FichePaie] Erreur calcul ancienneté : " . $e->getMessage()
+            );
+
             return 0;
         }
     }

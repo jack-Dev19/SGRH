@@ -3,6 +3,14 @@
 @section('title', 'Modifier employé')
 @section('page-title', 'Modifier employé')
 
+{{-- Devise configurée et taux de conversion --}}
+@php
+    $devise = \App\Models\Parametre::obtenir('general', 'devise', 'MGA');
+
+    $conversionDevise = app(\App\Services\ConversionDeviseService::class);
+    $tauxConversion = $conversionDevise->obtenirTaux($devise);
+@endphp
+
 @section('content')
 
 @php

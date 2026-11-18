@@ -2,6 +2,14 @@
 
 @section('title', 'Salaire')
 
+{{-- Devise configurée et taux de conversion --}}
+@php
+    $devise = \App\Models\Parametre::obtenir('general', 'devise', 'MGA');
+
+    $conversionDevise = app(\App\Services\ConversionDeviseService::class);
+    $tauxConversion = $conversionDevise->obtenirTaux($devise);
+@endphp
+
 @section('content')
 
 <div class="max-w-3xl mx-auto px-4 py-8">
@@ -10,7 +18,9 @@
     <div class="flex items-center gap-2 text-sm text-purple-500 font-medium mb-6 px-2">
         <a href="{{ route('gestion.salaires.index') }}" class="hover:text-purple-700 transition-colors">Salaires</a>
         <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
-        <span class="text-purple-900 font-bold truncate">{{ number_format($salaire->salaire_base, 0, ',', ' ') }} MGA</span>
+        <span class="text-purple-900 font-bold truncate">
+            {{ number_format($salaire->salaire_base * $tauxConversion, 2, ',', ' ') }} {{ $devise }}
+        </span>
     </div>
 
     {{-- Carte principale --}}
@@ -29,7 +39,10 @@
             </div>
 
             <p class="mt-4 text-[10px] font-bold text-purple-400 uppercase tracking-widest">Salaire de base</p>
-            <h1 class="text-3xl font-extrabold text-slate-900 tracking-tight">{{ number_format($salaire->salaire_base, 0, ',', ' ') }} <span class="text-lg text-slate-500 font-bold">MGA</span></h1>
+            <h1 class="text-3xl font-extrabold text-slate-900 tracking-tight">
+                {{ number_format($salaire->salaire_base * $tauxConversion, 2, ',', ' ') }}
+                <span class="text-lg text-slate-500 font-bold">{{ $devise }}</span>
+            </h1>
             <p class="text-sm text-slate-500 mt-1">{{ $salaire->employe?->nom_complet ?? 'Employé inconnu' }}</p>
 
             {{-- Badge Statut --}}

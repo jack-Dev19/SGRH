@@ -11,6 +11,11 @@
         'devise',
         'MGA'
     );
+    // Initialiser le service de conversion des devises.
+    $conversionDevise = app(\App\Services\ConversionDeviseService::class);
+
+    // Récupérer le taux correspondant à la devise sélectionnée.
+    $tauxConversion = $conversionDevise->obtenirTaux($devise);
 @endphp
 
     {{-- EN-TÊTE --}}
@@ -45,7 +50,7 @@
         <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-5">
             <p class="text-xs font-bold text-slate-500 uppercase tracking-wide mb-1">Masse salariale</p>
             <p class="text-2xl font-extrabold text-slate-900 mb-1">
-                {{ number_format($masseSalariale, 0, ',', ' ') }}
+                {{ number_format($masseSalariale * $tauxConversion, 2, ',', ' ') }}
             </p>
             <p class="text-xs text-slate-400">{{ $devise }} / mois</p>
         </div>

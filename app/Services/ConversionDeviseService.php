@@ -129,4 +129,41 @@ class ConversionDeviseService
     {
         return $montant * $this->obtenirTaux($devise);
     }
+        /**
+     * Convertir un montant d'une devise vers une autre.
+     *
+     * Exemple :
+     * 10 USD vers EUR.
+     *
+     * La conversion passe par la devise de référence MGA.
+     */
+    public function convertirEntreDevises(
+        float $montant,
+        string $deviseSource,
+        string $deviseDestination
+    ): float {
+        $deviseSource = strtoupper($deviseSource);
+        $deviseDestination = strtoupper($deviseDestination);
+
+        // Vérifier que les deux devises sont autorisées.
+        if (
+            !in_array($deviseSource, self::DEVISES_AUTORISEES, true) ||
+            !in_array($deviseDestination, self::DEVISES_AUTORISEES, true)
+        ) {
+            throw new RuntimeException('Devise non prise en charge.');
+        }
+
+        // Aucune conversion si les devises sont identiques.
+        if ($deviseSource === $deviseDestination) {
+            return $montant;
+        }
+
+        // Convertir d'abord le montant source vers MGA.
+        $montantEnMGA = $deviseSource === self::DEVISE_BASE
+            ? $montant
+            : $montant / $this->obtenirTaux($deviseSource);
+
+        // Puis convertir MGA vers la devise destination.
+        return $this->convertir($montantEnMGA, $deviseDestination);
+    }
 }

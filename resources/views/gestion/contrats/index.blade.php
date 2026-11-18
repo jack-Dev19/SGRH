@@ -304,7 +304,9 @@
 
                                 {{-- Salaire --}}
                                 <td class="px-6 py-4 hidden lg:table-cell">
-                                    <span class="font-bold text-slate-800">{{ number_format($contrat->salaire, 0, ',', ' ') }}</span>
+                                    <span class="font-bold text-slate-800">
+                                        {{ number_format($contrat->salaire, $contrat->devise === 'MGA' ? 0 : 2, ',', ' ') }}
+                                    </span>
                                     <span class="text-[10px] font-bold text-slate-400 uppercase ml-1">{{ $contrat->devise }}</span>
                                 </td>
 

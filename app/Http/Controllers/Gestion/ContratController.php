@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Contrat;
 use App\Models\Employe;
 use App\Services\ContratPdfService;
+use App\Services\ConversionDeviseService;
 use App\Services\FichePaieService;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -76,7 +77,7 @@ class ContratController extends Controller
             'date_debut'          => ['required', 'date'],
             'date_fin'            => ['nullable', 'date', 'after_or_equal:date_debut'],
             'salaire'             => ['required', 'numeric', 'min:0'],
-            'devise'              => ['required', 'string', 'max:10'],
+            'devise'              => ['required', 'in:MGA,EUR,USD'],
             'periode_essai'       => ['nullable', 'integer', 'min:0'],
             'unite_periode_essai' => ['nullable', 'string', 'max:20'],
             'statut'              => ['required', 'in:actif,expire,resilie'],
@@ -116,8 +117,11 @@ class ContratController extends Controller
         return view('gestion.contrats.edit', compact('contrat', 'employes'));
     }
 
-    public function update(Request $request, string $id)
-    {
+    public function update(
+        Request $request,
+        string $id,
+        ConversionDeviseService $conversionService
+    ) {
         $contrat = Contrat::findOrFail($id);
 
         $validated = $request->validate([
@@ -127,19 +131,42 @@ class ContratController extends Controller
             'date_debut'          => ['required', 'date'],
             'date_fin'            => ['nullable', 'date', 'after_or_equal:date_debut'],
             'salaire'             => ['required', 'numeric', 'min:0'],
-            'devise'              => ['required', 'string', 'max:10'],
+            'devise'              => ['required', 'in:MGA,EUR,USD'],
             'periode_essai'       => ['nullable', 'integer', 'min:0'],
             'unite_periode_essai' => ['nullable', 'string', 'max:20'],
             'statut'              => ['required', 'in:actif,expire,resilie'],
             'description'         => ['nullable', 'string', 'max:255'],
         ]);
 
+        // Récupérer les anciennes et nouvelles devises.
+        $ancienneDevise = $contrat->devise;
+        $nouvelleDevise = $validated['devise'];
+
+        // Convertir le salaire uniquement si la devise change.
+        if ($ancienneDevise !== $nouvelleDevise) {
+            try {
+                $validated['salaire'] = $conversionService->convertirEntreDevises(
+                    (float) $validated['salaire'],
+                    $ancienneDevise,
+                    $nouvelleDevise
+                );
+            } catch (\Throwable $exception) {
+                return back()
+                    ->withInput()
+                    ->withErrors([
+                        'devise' => 'La conversion de devise a échoué. Vérifiez votre connexion ou les taux de change disponibles. Le contrat n’a pas été modifié.',
+                    ]);
+            }
+        }
+
+        // Enregistrer les données après conversion.
         $contrat->update($validated);
 
         return redirect()
             ->route('gestion.contrats.index')
             ->with('success', 'Contrat modifié avec succès.');
     }
+
 
     // =================================================================
     // 5. SUPPRESSION

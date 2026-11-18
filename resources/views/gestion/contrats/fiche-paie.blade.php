@@ -8,7 +8,7 @@
     $emailEntreprise      = 'contact@digitalagency.mg';
     $nifEntreprise        = '3000 123 456';
     $statEntreprise       = '47110 11 2020 0 00123';
-    $cnapsEmployeur       = '123456789';
+    $numeroCnapsEntreprise = '123456789';
 
     /* ================================================================
      |  SÉCURISATION DES VARIABLES
@@ -508,7 +508,7 @@
                 <td class="label">Ancienneté</td>
                 <td class="value">{{ $ancienneteAnnees }} an(s)</td>
                 <td class="label">N° CNAPS</td>
-                <td class="value">{{ $cnapsEmployeur }}</td>
+                <td class="value">{{ $numeroCnapsEntreprise }}</td>
             </tr>
         </table>
 

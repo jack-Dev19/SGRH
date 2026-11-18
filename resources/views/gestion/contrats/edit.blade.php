@@ -182,12 +182,20 @@
                         <div class="grid grid-cols-3 gap-3">
                             <div class="relative col-span-2">
                                 <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none"><svg class="h-5 w-5 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg></div>
-                                <input type="number" name="salaire" min="0" step="1000" required value="{{ old('salaire', $contrat->salaire) }}" placeholder="Salaire brut"
+                                <input type="number" name="salaire" min="0" step="any" required value="{{ old('salaire', $contrat->salaire) }}" placeholder="Salaire brut"
                                     class="w-full pl-12 pr-4 py-3.5 bg-white border-2 border-purple-200 text-purple-900 text-sm rounded-full focus:ring-4 focus:ring-purple-500/20 focus:border-purple-500 placeholder-purple-300 transition-all outline-none">
                             </div>
                             <div class="relative">
-                                <input type="text" name="devise" required value="{{ old('devise', $contrat->devise) }}" placeholder="{{ $contrat->devise }}"
-                                    class="w-full px-4 py-3.5 bg-white border-2 border-purple-200 text-purple-900 text-sm rounded-full font-bold text-center focus:ring-4 focus:ring-purple-500/20 focus:border-purple-500 placeholder-purple-300 transition-all outline-none">
+                                <select name="devise" required
+                                    class="w-full px-4 py-3.5 bg-white border-2 border-purple-200 text-purple-900 text-sm rounded-full font-bold text-center focus:ring-4 focus:ring-purple-500/20 focus:border-purple-500 transition-all outline-none">
+
+                                    @foreach (['MGA', 'EUR', 'USD'] as $code)
+                                        <option value="{{ $code }}" {{ old('devise', $contrat->devise) == $code ? 'selected' : '' }}>
+                                            {{ $code }}
+                                        </option>
+                                    @endforeach
+                                    
+                                </select>
                             </div>
                         </div>
 

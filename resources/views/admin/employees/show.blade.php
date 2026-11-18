@@ -3,6 +3,14 @@
 @section('title', 'Détails employé')
 @section('page-title', 'Détails employé')
 
+{{-- Devise configurée et taux de conversion --}}
+@php
+    $devise = \App\Models\Parametre::obtenir('general', 'devise', 'MGA');
+
+    $conversionDevise = app(\App\Services\ConversionDeviseService::class);
+    $tauxConversion = $conversionDevise->obtenirTaux($devise);
+@endphp
+
 @section('content')
 
 <div class="max-w-4xl mx-auto">
@@ -66,7 +74,9 @@
 
                 <div>
                     <p class="text-xs font-semibold text-slate-400 uppercase mb-1">Salaire de base</p>
-                    <p class="text-sm font-bold text-slate-800">{{ number_format($employee->salaire_base, 0, ',', ' ') }} MAD</p>
+                    <p class="text-sm font-bold text-slate-800">
+                        {{ number_format($employee->salaire_base * $tauxConversion, 2, ',', ' ') }} {{ $devise }}
+                    </p>
                 </div>
 
                 <div>

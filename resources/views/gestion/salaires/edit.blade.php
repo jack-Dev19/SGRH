@@ -2,6 +2,14 @@
 
 @section('title', 'Modifier salaire')
 
+{{-- Devise configurée et taux de conversion --}}
+@php
+    $devise = \App\Models\Parametre::obtenir('general', 'devise', 'MGA');
+
+    $conversionDevise = app(\App\Services\ConversionDeviseService::class);
+    $tauxConversion = $conversionDevise->obtenirTaux($devise);
+@endphp
+
 @section('content')
 
 <div class="max-w-3xl mx-auto px-4 py-8" x-data="{
@@ -36,7 +44,7 @@
             <h1 class="text-3xl font-extrabold text-purple-700 tracking-wide uppercase">Modifier</h1>
             <p class="text-sm font-semibold text-slate-400 tracking-widest uppercase mt-1">Le salaire</p>
             <p class="text-xs text-purple-500 mt-3 bg-purple-50 inline-block px-3 py-1 rounded-full border border-purple-100">
-                {{ $salaire->employe?->nom_complet ?? 'Employé' }} · {{ number_format($salaire->salaire_base, 0, ',', ' ') }} MGA
+                {{ $salaire->employe?->nom_complet ?? 'Employé' }} · {{ number_format($salaire->salaire_base * $tauxConversion, 2, ',', ' ') }} {{ $devise }}
             </p>
         </div>
 

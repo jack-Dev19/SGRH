@@ -2,6 +2,14 @@
 
 @section('title', 'Mes fiches de paie')
 
+{{-- Devise configurée et taux de conversion --}}
+@php
+    $devise = \App\Models\Parametre::obtenir('general', 'devise', 'MGA');
+
+    $conversionDevise = app(\App\Services\ConversionDeviseService::class);
+    $tauxConversion = $conversionDevise->obtenirTaux($devise);
+@endphp
+
 @section('content')
 
 <div class="max-w-7xl mx-auto">
@@ -96,16 +104,16 @@
                         <div class="{{ $c['bg'] }} {{ $c['border'] }} border rounded-xl p-3">
                             <p class="text-[9px] font-bold text-slate-500 uppercase tracking-wider mb-1">Brut</p>
                             <p class="text-sm font-extrabold {{ $c['text'] }} leading-tight truncate">
-                                {{ number_format($bulletin->salaire_brut, 0, ',', ' ') }}
+                                {{ number_format($bulletin->salaire_brut * $tauxConversion, 2, ',', ' ') }}
                             </p>
-                            <p class="text-[9px] text-slate-400">MGA</p>
+                            <p class="text-[9px] text-slate-400">{{ $devise }}</p>
                         </div>
                         <div class="{{ $c['bg'] }} {{ $c['border'] }} border rounded-xl p-3">
                             <p class="text-[9px] font-bold text-slate-500 uppercase tracking-wider mb-1">Net</p>
                             <p class="text-sm font-extrabold {{ $c['text'] }} leading-tight truncate">
-                                {{ number_format($bulletin->salaire_net, 0, ',', ' ') }}
+                                {{ number_format($bulletin->salaire_net * $tauxConversion, 2, ',', ' ') }}
                             </p>
-                            <p class="text-[9px] text-slate-400">MGA</p>
+                            <p class="text-[9px] text-slate-400">{{ $devise }}</p>
                         </div>
                     </div>
 
@@ -113,18 +121,18 @@
                     <div class="space-y-1.5 text-xs mb-4 pb-4 border-b border-slate-100">
                         <div class="flex justify-between text-slate-500">
                             <span>Base</span>
-                            <span class="font-semibold text-slate-700">{{ number_format($bulletin->salaire_base, 0, ',', ' ') }}</span>
+                            <span class="font-semibold text-slate-700">{{ number_format($bulletin->salaire_base * $tauxConversion, 2, ',', ' ') }} {{ $devise }}</span>
                         </div>
                         @if($bulletin->total_primes > 0)
                             <div class="flex justify-between text-emerald-600">
                                 <span>Primes</span>
-                                <span class="font-semibold">+{{ number_format($bulletin->total_primes, 0, ',', ' ') }}</span>
+                                <span class="font-semibold">+{{ number_format($bulletin->total_primes * $tauxConversion, 2, ',', ' ') }} {{ $devise }}</span>
                             </div>
                         @endif
                         @if($bulletin->total_retenues > 0)
                             <div class="flex justify-between text-red-500">
                                 <span>Retenues</span>
-                                <span class="font-semibold">-{{ number_format($bulletin->total_retenues, 0, ',', ' ') }}</span>
+                                <span class="font-semibold">-{{ number_format($bulletin->total_retenues * $tauxConversion, 2, ',', ' ') }} {{ $devise }}</span>
                             </div>
                         @endif
                     </div>

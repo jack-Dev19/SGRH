@@ -4,6 +4,18 @@
 
 @section('content')
 
+@php
+    // Récupérer la devise configurée dans les paramètres généraux.
+    $devise = \App\Models\Parametre::obtenir(
+        'general',
+        'devise',
+        'MGA'
+    );
+
+    // Charger le service de conversion des devises.
+    $conversionDevise = app(\App\Services\ConversionDeviseService::class);
+@endphp
+
 <div class="max-w-5xl mx-auto">
 
     {{-- Fil d'Ariane --}}
@@ -63,13 +75,16 @@
 
                 <div class="md:col-span-2 bg-slate-50 rounded-xl p-4">
                     <p class="text-xs font-bold text-slate-500 uppercase tracking-wide mb-2">Fourchette salariale</p>
+                                
                     @if($poste->salaire_min || $poste->salaire_max)
                         <p class="text-lg font-bold text-slate-900">
-                            {{ $poste->salaire_min ? number_format($poste->salaire_min, 0, ',', ' ') : '—' }}
+                            {{ $poste->salaire_min ? number_format($conversionDevise->convertir($poste->salaire_min, $devise), 0, ',', ' ') : '—' }}
+                        
                             @if($poste->salaire_max && $poste->salaire_max != $poste->salaire_min)
-                                → {{ number_format($poste->salaire_max, 0, ',', ' ') }}
+                                → {{ number_format($conversionDevise->convertir($poste->salaire_max, $devise), 0, ',', ' ') }}
                             @endif
-                            <span class="text-sm font-normal text-slate-400">MGA</span>
+                        
+                            <span class="text-sm font-normal text-slate-400">{{ $devise }}</span>
                         </p>
                     @else
                         <p class="text-sm text-slate-400 italic">Non définie</p>

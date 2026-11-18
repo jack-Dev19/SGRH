@@ -76,7 +76,12 @@
     $referenceContrat = $contrat->numero;
     $dateDebut        = $contrat->date_debut?->format('d/m/Y') ?? '—';
     $dateFin          = $contrat->date_fin?->format('d/m/Y');
-    $montantFormate   = number_format($contrat->salaire, 0, ',', ' ') . ' ' . $contrat->devise;
+    $montantFormate = number_format(
+        $contrat->salaire,
+        $contrat->devise === 'MGA' ? 0 : 2,
+        ',',
+        ' '
+    ) . ' ' . $contrat->devise;
 
     $nomEntreprise        = 'DIGITAL AGENCY';
     $adresseEntreprise    = 'Lot III G 08 HANGAR Antohomadinika, Antananarivo';
