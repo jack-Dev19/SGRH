@@ -1,3 +1,4 @@
+
 <?php
 
 return [
@@ -7,10 +8,7 @@ return [
     | Third Party Services
     |--------------------------------------------------------------------------
     |
-    | This file is for storing the credentials for third party services such
-    | as Resend, Postmark, AWS, and more. This file provides the de facto
-    | location for this type of information, allowing packages to have
-    | a conventional file to locate the various service credentials.
+    | Configuration des services externes utilisés par l'application.
     |
     */
 
@@ -33,6 +31,19 @@ return [
             'bot_user_oauth_token' => env('SLACK_BOT_USER_OAUTH_TOKEN'),
             'channel' => env('SLACK_BOT_USER_DEFAULT_CHANNEL'),
         ],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Contact Form
+    |--------------------------------------------------------------------------
+    */
+
+    'contact' => [
+        'receiver' => env(
+            'CONTACT_RECEIVER_EMAIL',
+            'rakotarison19@gmail.com'
+        ),
     ],
 
 ];
