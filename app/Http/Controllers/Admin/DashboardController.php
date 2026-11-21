@@ -100,10 +100,12 @@ class DashboardController extends Controller
             });
 
         // ==========================================================
-        // 7. NOTIFICATIONS NON LUES (valeur par défaut 0)
+        // 7. NOTIFICATIONS NON LUES
         // ==========================================================
-        // ⚠️ Le système de notifications a été retiré, on met 0.
-        $notificationsNonLues = 0;
+        $notificationsNonLues = auth()->user()
+            ->notifications()
+            ->nonLues()
+            ->count();
 
         return view('admin.dashboard', compact(
             'stats',

@@ -7,6 +7,7 @@ use App\Models\Absence;
 use App\Models\Employe;
 use App\Models\HistoriqueAction;
 use App\Services\AbsenceService;
+use App\Services\NotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
@@ -258,7 +259,11 @@ class AbsenceController extends Controller
     /**
      * Approuver une absence → statut "justifie".
      */
-    public function approuver(Request $request, string $id)
+    public function approuver(
+        Request $request,
+        string $id,
+        NotificationService $notificationService
+    )
     {
         $absence = Absence::findOrFail($id);
 
@@ -279,6 +284,18 @@ class AbsenceController extends Controller
             'commentaire_validation' => $request->input('commentaire_validation') ?? 'Absence justifiée et approuvée.',
         ]);
 
+        // Notification de l'employé
+        if ($absence->employe?->user) {
+            $notificationService->envoyer(
+                $absence->employe->user,
+                'Absence approuvée',
+                "Votre absence du {$absence->date_debut->format('d/m/Y')} au {$absence->date_fin->format('d/m/Y')} a été approuvée.",
+                'success',
+                null,
+                'absences'
+            );
+        }
+
         // Log
         HistoriqueAction::create([
             'user_id'     => Auth::id(),
@@ -295,8 +312,11 @@ class AbsenceController extends Controller
     /**
      * Refuser une absence → statut "non_justifie".
      */
-    public function refuser(Request $request, string $id)
-    {
+        public function refuser(
+        Request $request,
+        string $id,
+        NotificationService $notificationService
+    ) {
         $absence = Absence::findOrFail($id);
 
         if ($absence->statut !== 'en_attente') {
@@ -315,6 +335,18 @@ class AbsenceController extends Controller
             'date_validation'        => now(),
             'commentaire_validation' => $request->input('commentaire_validation') ?? 'Absence non justifiée.',
         ]);
+
+        // Notification de l'employé
+        if ($absence->employe?->user) {
+            $notificationService->envoyer(
+                $absence->employe->user,
+                'Absence refusée',
+                "Votre absence du {$absence->date_debut->format('d/m/Y')} au {$absence->date_fin->format('d/m/Y')} a été refusée. Motif : {$absence->commentaire_validation}",
+                'danger',
+                null,
+                'absences'
+            );
+        }
 
         // Log
         HistoriqueAction::create([

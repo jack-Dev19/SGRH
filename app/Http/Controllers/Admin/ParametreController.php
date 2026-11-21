@@ -31,19 +31,65 @@ class ParametreController extends Controller
         $stats = [
             'utilisateurs' => User::count(),
             'roles'        => Role::count(),
-            'types_conges' => TypeConge::count(),
+            'types_conges'  => TypeConge::count(),
             'jours_feries' => JourFerie::count(),
-            'actions_log'  => HistoriqueAction::count(),
+            'actions_log'   => HistoriqueAction::count(),
         ];
 
-        // Paramètres généraux enregistrés en base de données
+        // Paramètres généraux enregistrés en base
         $parametresGeneraux = Parametre::where('groupe', 'general')
             ->pluck('valeur', 'cle')
             ->toArray();
 
+        // Préférences des canaux de notification
+        $notificationsCanaux = Parametre::obtenir(
+            'notifications',
+            'canaux',
+            [
+                'application' => true,
+                'email'       => false,
+                'sms'         => false,
+            ]
+        );
+
+        // Décoder le JSON si les données proviennent de la base
+        if (is_string($notificationsCanaux)) {
+            $notificationsCanaux = json_decode(
+                $notificationsCanaux,
+                true
+            ) ?? [];
+        }
+
+        // Préférences des modules de notification
+        $notificationsModules = Parametre::obtenir(
+            'notifications',
+            'modules',
+            [
+                'conges'       => true,
+                'absences'     => true,
+                'presence'     => true,
+                'paie'        => true,
+                'performance'  => true,
+                'recrutement'  => true,
+            ]
+        );
+
+        // Décoder le JSON si nécessaire
+        if (is_string($notificationsModules)) {
+            $notificationsModules = json_decode(
+                $notificationsModules,
+                true
+            ) ?? [];
+        }
+
         return view(
             'admin.parametres.index',
-            compact('stats', 'parametresGeneraux')
+            compact(
+                'stats',
+                'parametresGeneraux',
+                'notificationsCanaux',
+                'notificationsModules'
+            )
         );
     }
     /**
@@ -51,6 +97,60 @@ class ParametreController extends Controller
      */
     public function update(Request $request)
     {
+        // ==========================================================
+        // ENREGISTREMENT DES PARAMÈTRES NOTIFICATIONS
+        // ==========================================================
+        if ($request->has('notifications_form')) {
+    
+            // Canaux autorisés
+            $canauxAutorises = ['application', 'email', 'sms'];
+    
+            $canauxEnvoyes = $request->input('notifications', []);
+    
+            $canaux = [];
+    
+            foreach ($canauxAutorises as $canal) {
+                $canaux[$canal] = isset($canauxEnvoyes[$canal])
+                    && $canauxEnvoyes[$canal] == '1';
+            }
+    
+            // Modules autorisés
+            $modulesAutorises = [
+                'conges',
+                'absences',
+                'presence',
+                'paie',
+                'performance',
+                'recrutement',
+            ];
+    
+            $modulesEnvoyes = $request->input('notifications.modules', []);
+    
+            $modules = [];
+    
+            foreach ($modulesAutorises as $module) {
+                $modules[$module] = isset($modulesEnvoyes[$module])
+                    && $modulesEnvoyes[$module] == '1';
+            }
+    
+            // Sauvegarder les canaux
+            Parametre::definir('notifications', 'canaux', $canaux);
+    
+            // Sauvegarder les modules
+            Parametre::definir('notifications', 'modules', $modules);
+    
+            // Retour après sauvegarde des notifications
+            return redirect()
+                ->route('admin.parametres.index')
+                ->with(
+                    'success',
+                    'Les paramètres des notifications ont été enregistrés avec succès.'
+                );
+        }
+    
+        // ==========================================================
+        // ENREGISTREMENT DES PARAMÈTRES GÉNÉRAUX (EXISTANT)
+        // ==========================================================
         // 1. Validation des paramètres généraux et du logo
         $donnees = $request->validate([
             'nom_entreprise' => ['required', 'string', 'max:255'],

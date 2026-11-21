@@ -258,13 +258,35 @@
                                         Approuver
                                     </button>
                                 </form>
-                                <form action="{{ route('gestion.conges.refuser', $conge) }}" method="POST" class="flex-1">
+                                <form action="{{ route('gestion.conges.refuser', $conge) }}"
+                                      method="POST"
+                                      class="flex-1"
+                                      onsubmit="return confirm('Confirmer le refus de cette demande ?');">
                                     @csrf
-                                    <button type="submit" onclick="return confirm('Refuser ce congé ?');"
-                                        class="w-full inline-flex items-center justify-center gap-1 text-[10px] font-bold text-white bg-red-600 hover:bg-red-700 py-2 rounded-lg transition shadow-sm">
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
-                                        Refuser
-                                    </button>
+                                                            
+                                    <details class="w-full">
+                                        <summary class="list-none cursor-pointer w-full inline-flex items-center justify-center gap-1 text-[10px] font-bold text-white bg-red-600 hover:bg-red-700 py-2 rounded-lg transition shadow-sm">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+                                            </svg>
+                                            Refuser
+                                        </summary>
+                                    
+                                        <div class="mt-2 space-y-2">
+                                            <textarea
+                                                name="commentaire_validation"
+                                                rows="2"
+                                                maxlength="255"
+                                                placeholder="Motif du refus (facultatif)..."
+                                                class="w-full text-xs border border-red-200 rounded-lg p-2 focus:ring-2 focus:ring-red-300 focus:border-red-400 outline-none resize-none"
+                                            ></textarea>
+                                        
+                                            <button type="submit"
+                                                class="w-full text-[10px] font-bold text-white bg-red-700 hover:bg-red-800 py-2 rounded-lg transition">
+                                                Confirmer le refus
+                                            </button>
+                                        </div>
+                                    </details>
                                 </form>
                             </div>
                         @endif

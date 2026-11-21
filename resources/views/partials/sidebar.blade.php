@@ -74,22 +74,6 @@
 
     </div>
 
-    {{-- Carte profil --}}
-    <div class="px-4 py-4 border-b border-white/5 shrink-0">
-        <div class="flex items-center gap-3">
-            <div class="relative">
-                <div class="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold text-sm shadow-lg shadow-purple-500/30 ring-2 ring-white/10">
-                    {{ strtoupper(substr(Auth::user()->name ?? 'NA', 0, 2)) }}
-                </div>
-                <span class="absolute bottom-0 right-0 w-3 h-3 bg-emerald-400 border-2 border-slate-900 rounded-full"></span>
-            </div>
-            <div class="flex-1 min-w-0">
-                <p class="text-sm font-semibold text-white truncate">{{ Auth::user()->name ?? 'Utilisateur' }}</p>
-                <p class="text-[10px] text-purple-300 truncate uppercase tracking-wider font-medium">{{ $roleNom ?? 'Sans rôle' }}</p>
-            </div>
-        </div>
-    </div>
-
     {{-- Navigation --}}
     <nav class="flex-1 overflow-y-auto py-3 px-3 sidebar-nav">
 

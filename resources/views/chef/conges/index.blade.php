@@ -104,14 +104,39 @@
                                                 ✓
                                             </button>
                                         </form>
-                                        <form action="{{ route('chef.conges.refuser', $c->id) }}" method="POST" class="inline">
-                                            @csrf
-                                            <button type="submit"
-                                                onclick="return confirm('Refuser ?');"
-                                                class="text-xs font-medium px-3 py-1 rounded-full bg-red-50 text-red-700 hover:bg-red-100 transition">
+                                        
+                                        <details class="relative inline-block">
+                                            <summary
+                                                class="list-none cursor-pointer text-xs font-medium px-3 py-1 rounded-full bg-red-50 text-red-700 hover:bg-red-100 transition"
+                                                title="Refuser la demande">
                                                 ✕
-                                            </button>
-                                        </form>
+                                            </summary>
+                                        
+                                            <form action="{{ route('chef.conges.refuser', $c->id) }}"
+                                                  method="POST"
+                                                  class="absolute right-0 top-8 z-30 w-72 bg-white border border-slate-200 rounded-xl shadow-xl p-4 text-left">
+                                                @csrf
+                                            
+                                                <label for="commentaire-refus-index-{{ $c->id }}"
+                                                       class="block text-sm font-semibold text-slate-700 mb-2">
+                                                    Commentaire de refus
+                                                </label>
+                                            
+                                                <textarea
+                                                    id="commentaire-refus-index-{{ $c->id }}"
+                                                    name="commentaire_validation"
+                                                    rows="3"
+                                                    maxlength="255"
+                                                    placeholder="Expliquez le motif du refus..."
+                                                    class="w-full text-sm border border-slate-300 rounded-lg p-3 focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none resize-none"></textarea>
+                                            
+                                                <button type="submit"
+                                                        onclick="return confirm('Confirmer le refus de cette demande ?');"
+                                                        class="w-full mt-3 bg-red-600 hover:bg-red-700 text-white text-sm font-semibold py-2 rounded-lg transition">
+                                                    Confirmer le refus
+                                                </button>
+                                            </form>
+                                        </details>
                                     @endif
                                 </div>
                             </td>

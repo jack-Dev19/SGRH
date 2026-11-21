@@ -3,6 +3,8 @@ namespace App\Http\Controllers\Chef;
 use App\Http\Controllers\Controller; 
 use App\Models\DemandeConge; 
 use App\Models\Employe; 
+use App\Models\User;
+use App\Services\NotificationService;
 use Illuminate\Http\Request; 
 use Illuminate\Support\Facades\Auth; 
 use Illuminate\View\View; 
@@ -115,84 +117,157 @@ class CongeController extends Controller
         return view('chef.conges.show', compact('conge')); 
     } 
  
-    /** 
-     * Approuve une demande encore en attente. 
-     */ 
-    public function approuver(string $id): RedirectResponse 
-    { 
-        $employeIds = $this->getEmployeIds(); 
+    /**
+     * Approuve une demande de congé encore en attente.
+     * Une notification est envoyée à l'employé concerné.
+     */
+    public function approuver(
+        string $id,
+        NotificationService $notificationService
+    ): RedirectResponse
+    {
+        $employeIds = $this->getEmployeIds();
+
+        // La demande doit appartenir au département du chef.
+        $conge = DemandeConge::with('employe')
+            ->whereIn('employe_id', $employeIds)
+            ->findOrFail($id);
+
+        // Empêcher une seconde décision sur une demande traitée.
+        if ($conge->statut !== 'en_attente') {
+            return redirect()->back()->with(
+                'error',
+                'Cette demande a déjà été traitée.'
+            );
+        }
+
+        // Enregistrer la décision du chef.
+        $conge->update([
+            'statut' => 'approuve',
+            'valide_par' => Auth::id(),
+            'date_validation' => now(),
+            'commentaire_validation' =>
+                'Approuvé par le chef de département.',
+        ]);
+
+        // Retrouver le compte utilisateur de l'employé.
+        $employe = $conge->employe;
+
+        $utilisateur = $employe?->user_id
+            ? User::find($employe->user_id)
+            : null;
+
+        // Préparer le message de notification.
+        $message = 'Votre demande de congé du '
+            . $conge->date_debut->format('d/m/Y')
+            . ' au '
+            . $conge->date_fin->format('d/m/Y')
+            . ' a été approuvée par votre chef de département.';
+
+        // Envoyer la notification à l'employé.
+        if ($utilisateur) {
+            $notificationService->envoyer(
+                $utilisateur,
+                'Demande de congé approuvée',
+                $message,
+                'success',
+                route('employe.conges.index'),
+                'conges',
+                $conge->id
+            );
+        }
+
+        return redirect()->back()->with(
+            'success',
+            "Congé de {$conge->employe?->nom_complet} approuvé."
+        );
+    }
  
-        // La demande doit appartenir au département du chef. 
-        $conge = DemandeConge::with('employe') 
-            ->whereIn('employe_id', $employeIds) 
-            ->findOrFail($id); 
- 
-        // Empêcher une seconde décision sur une demande traitée. 
-        if ($conge->statut !== 'en_attente') { 
-            return redirect()->back()->with( 
-                'error', 
-                'Cette demande a déjà été traitée.' 
-            ); 
-        } 
- 
-        // Enregistrer la décision et son auteur. 
-        $conge->update([ 
-            'statut' => 'approuve', 
-            'valide_par' => Auth::id(), 
-            'date_validation' => now(), 
-            'commentaire_validation' => 
-                'Approuvé par le chef de département.', 
-        ]); 
- 
-        return redirect()->back()->with( 
-            'success', 
-            "Congé de {$conge->employe?->nom_complet} approuvé." 
-        ); 
-    } 
- 
-    /** 
-    * Refuse une demande encore en attente. 
-    */ 
-    public function refuser( 
-        Request $request, 
-        string $id 
-    ): RedirectResponse { 
-        $employeIds = $this->getEmployeIds(); 
-        // Vérifier que la demande appartient au département du chef. 
-        $conge = DemandeConge::with('employe') ->whereIn('employe_id', $employeIds) ->findOrFail($id); 
-        // Empêcher de traiter une demande déjà décidée. 
-        if ($conge->statut !== 'en_attente') { 
-        return redirect()->back()->with( 
-        'error', 
-        'Cette demande a déjà été traitée.' 
-        ); 
-        } 
-        // Valider le commentaire : il reste facultatif. 
-        $validated = $request->validate([ 
-        'commentaire_validation' => [ 
-        'nullable', 
-        'string', 
-        'max:255', 
-        ], 
-        ]); 
-        // Utiliser le commentaire par défaut si le champ est vide 
-        // ou si aucun commentaire n'a été envoyé. 
-        $commentaire = trim( 
-        $validated['commentaire_validation'] ?? '' 
-        ); 
-        if ($commentaire === '') { 
-        } 
-        $commentaire = 'Refusé par le chef de département.'; 
-        // Enregistrer le refus. 
-        $conge->update([ 
-        'statut' => 'refuse', 
-        'valide_par' => Auth::id(), 
-        'date_validation' => now(), 
-        'commentaire_validation' => $commentaire, 
-        ]); 
-        return redirect()->back()->with( 
-        'success', 
-        "Congé de {$conge->employe?->nom_complet} refusé." 
-        ); 
-    } 
+    
+    /**
+     * Refuse une demande de congé encore en attente.
+     * Une notification est envoyée à l'employé concerné.
+     */
+    public function refuser(
+        Request $request,
+        string $id,
+        NotificationService $notificationService
+    ): RedirectResponse {
+        $employeIds = $this->getEmployeIds();
+    
+        // Vérifier que la demande appartient au département du chef.
+        $conge = DemandeConge::with('employe')
+            ->whereIn('employe_id', $employeIds)
+            ->findOrFail($id);
+    
+        // Empêcher de traiter une demande déjà décidée.
+        if ($conge->statut !== 'en_attente') {
+            return redirect()->back()->with(
+                'error',
+                'Cette demande a déjà été traitée.'
+            );
+        }
+    
+        // Valider le commentaire : il reste facultatif.
+        $validated = $request->validate([
+            'commentaire_validation' => [
+                'nullable',
+                'string',
+                'max:255',
+            ],
+        ]);
+    
+        // Conserver le commentaire personnalisé.
+        // Utiliser le commentaire par défaut s'il est vide.
+        $commentaire = trim(
+            $validated['commentaire_validation'] ?? ''
+        );
+    
+        if ($commentaire === '') {
+            $commentaire = 'Refusé par le chef de département.';
+        }
+    
+        // Enregistrer le refus.
+        $conge->update([
+            'statut' => 'refuse',
+            'valide_par' => Auth::id(),
+            'date_validation' => now(),
+            'commentaire_validation' => $commentaire,
+        ]);
+    
+        // Retrouver le compte utilisateur de l'employé.
+        $employe = $conge->employe;
+    
+        $utilisateur = $employe?->user_id
+            ? User::find($employe->user_id)
+            : null;
+    
+        // Préparer le message de notification.
+        $message = 'Votre demande de congé du '
+            . $conge->date_debut->format('d/m/Y')
+            . ' au '
+            . $conge->date_fin->format('d/m/Y')
+            . ' a été refusée par votre chef de département. '
+            . 'Motif : '
+            . $commentaire;
+        
+        // Envoyer la notification à l'employé.
+        if ($utilisateur) {
+            $notificationService->envoyer(
+                $utilisateur,
+                'Demande de congé refusée',
+                $message,
+                'danger',
+                route('employe.conges.index'),
+                'conges',
+                $conge->id
+            );
+        }
+    
+        return redirect()->back()->with(
+            'success',
+            "Congé de {$conge->employe?->nom_complet} refusé."
+        );
+    }
+
 }

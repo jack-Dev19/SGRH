@@ -59,6 +59,13 @@ class User extends Authenticatable
     {
         return $this->hasMany(Departement::class, 'responsable_id', 'id');
     }
+    /**
+     * Notifications personnalisées de l'utilisateur.
+     */
+    public function notifications(): HasMany
+    {
+        return $this->hasMany(Notification::class, 'user_id', 'id');
+    }
 
     // =================================================================
     // HELPERS DE RÔLE

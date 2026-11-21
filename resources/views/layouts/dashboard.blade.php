@@ -48,9 +48,15 @@
 
         {{-- ZONE PRINCIPALE --}}
         <div class="flex-1 flex flex-col min-w-0">
+        
+            {{-- HEADER DU DASHBOARD --}}
+            @include('partials.dashboard-header')
+        
+            {{-- CONTENU DE LA PAGE --}}
             <main class="flex-1 p-4 md:p-6 lg:p-8">
                 @yield('content')
             </main>
+        
         </div>
 
     </div>

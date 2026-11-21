@@ -89,16 +89,48 @@
                                         </svg>
                                     </button>
                                 </form>
-                                <form action="{{ route('chef.conges.refuser', $c) }}" method="POST" class="inline">
-                                    @csrf
-                                    <button type="submit"
-                                        onclick="return confirm('Refuser ce congé ?');"
-                                        class="w-8 h-8 rounded-lg bg-red-100 hover:bg-red-200 text-red-700 flex items-center justify-center transition">
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M6 18L18 6M6 6l12 12"/>
+                                
+                                <details class="relative">
+                                    <summary
+                                        class="list-none cursor-pointer w-8 h-8 rounded-lg bg-red-100 hover:bg-red-200 text-red-700 flex items-center justify-center transition"
+                                        title="Refuser ce congé">
+                                        <svg xmlns="http://www.w3.org/2000/svg"
+                                             class="h-4 w-4"
+                                             fill="none"
+                                             viewBox="0 0 24 24"
+                                             stroke="currentColor">
+                                            <path stroke-linecap="round"
+                                                  stroke-linejoin="round"
+                                                  stroke-width="3"
+                                                  d="M6 18L18 6M6 6l12 12"/>
                                         </svg>
-                                    </button>
-                                </form>
+                                    </summary>
+                                
+                                    <form action="{{ route('chef.conges.refuser', $c->id) }}"
+                                          method="POST"
+                                          class="absolute right-0 top-10 z-30 w-72 bg-white border border-slate-200 rounded-xl shadow-xl p-4">
+                                        @csrf
+                                    
+                                        <label for="commentaire-refus-dashboard-{{ $c->id }}"
+                                               class="block text-sm font-semibold text-slate-700 mb-2">
+                                            Commentaire de refus
+                                        </label>
+                                    
+                                        <textarea
+                                            id="commentaire-refus-dashboard-{{ $c->id }}"
+                                            name="commentaire_validation"
+                                            rows="3"
+                                            maxlength="255"
+                                            placeholder="Expliquez le motif du refus..."
+                                            class="w-full text-sm border border-slate-300 rounded-lg p-3 focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none resize-none"></textarea>
+                                    
+                                        <button type="submit"
+                                                onclick="return confirm('Confirmer le refus de ce congé ?');"
+                                                class="w-full mt-3 bg-red-600 hover:bg-red-700 text-white text-sm font-semibold py-2 rounded-lg transition">
+                                            Confirmer le refus
+                                        </button>
+                                    </form>
+                                </details>
                             </div>
                         </div>
                     @empty

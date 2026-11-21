@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class DemandeConge extends Model
 {
@@ -57,5 +58,13 @@ class DemandeConge extends Model
             User::class, 
             'valide_par' 
         ); 
+    }
+
+    /**
+     * Notifications associées à cette demande de congé.
+     */
+    public function notifications(): HasMany
+    {
+        return $this->hasMany(Notification::class, 'demande_conge_id');
     }
 }

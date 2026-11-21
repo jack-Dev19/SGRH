@@ -116,8 +116,10 @@ class DashboardController extends Controller
         // ==========================================================
         // 7. NOTIFICATIONS NON LUES
         // ==========================================================
-        // Le système de notifications n'est pas utilisé.
-        $notificationsNonLues = 0;
+        $notificationsNonLues = auth()->user()
+            ->notifications()
+            ->nonLues()
+            ->count();
 
         return view('rh.dashboard', compact(
             'stats',

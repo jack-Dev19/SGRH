@@ -23,7 +23,7 @@ class OffreEmploi extends Model
         'experience',
         'niveau_etude',
         'salaire',
-        'deadline',
+        'date_limite',
         'email_contact',
         'statut',
         'publiee_le',
@@ -32,6 +32,7 @@ class OffreEmploi extends Model
 
     protected $casts = [
         'deadline' => 'date',
+        'date_limite' => 'date',
         'publiee_le' => 'datetime',
     ];
 

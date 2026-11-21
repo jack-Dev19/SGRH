@@ -32,6 +32,7 @@ use App\Http\Controllers\Gestion\QrCodeController;
 use App\Http\Controllers\Gestion\SalaireController;
 use App\Http\Controllers\Gestion\UserController;
 use App\Http\Controllers\PublicController;
+use App\Http\Controllers\Gestion\NotificationController;
 use App\Http\Controllers\Rh\DashboardController as RhDashboardController;
 use App\Services\AbsenceService;
 use App\Http\Controllers\Admin\ParametreController;
@@ -58,6 +59,22 @@ Route::middleware('guest')->group(function () {
 Route::middleware('auth')->group(function () {
 
     Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
+
+    // ==============================================================
+    // NOTIFICATIONS — Tous les utilisateurs authentifiés
+    // ==============================================================
+
+    // Afficher le centre de notifications
+    Route::get('/notifications', [NotificationController::class, 'index'])
+        ->name('notifications.index');
+
+    // Marquer une notification comme lue
+    Route::patch('/notifications/{id}/lire', [NotificationController::class, 'marquerCommeLue'])
+        ->name('notifications.lire');
+
+    // Marquer toutes les notifications comme lues
+    Route::patch('/notifications/lire-tout', [NotificationController::class, 'toutMarquerCommeLue'])
+        ->name('notifications.tout-lire');
 
     // Redirection intelligente après login
     Route::get('/dashboard', function () {
