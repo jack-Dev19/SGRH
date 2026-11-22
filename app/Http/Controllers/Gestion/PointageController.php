@@ -7,28 +7,18 @@ use App\Models\Employe;
 use App\Models\Pointage;
 use App\Services\PointageService;
 use App\Services\NotificationService;
-use Carbon\Carbon;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Log;
 use Illuminate\View\View;
+use Illuminate\Support\Facades\Log;
+use Carbon\Carbon;
 
 class PointageController extends Controller
 {
-    /**
-     * ⭐ Délai minimum entre Check-in et Check-out (en minutes).
-     */
+    public function __construct(
+        protected PointageService $pointageService
+    ) {}
+
     public const DELAI_MIN_CHECKOUT = 3;
-
-    protected PointageService $pointageService;
-
-    public function __construct(PointageService $pointageService)
-    {
-        $this->pointageService = $pointageService;
-    }
-
-    // =================================================================
-    // SCANNER
-    // =================================================================
 
     public function scanner(): View
     {
@@ -36,52 +26,54 @@ class PointageController extends Controller
 
         $pointagesJour = Pointage::with('employe')
             ->whereDate('date_heure', $today)
-            ->orderByDesc('date_heure')
+            ->latest('date_heure')
             ->take(15)
             ->get();
 
         $stats = [
-            'arrivees'  => Pointage::whereDate('date_heure', $today)->where('type', 'entree')->count(),
-            'departs'   => Pointage::whereDate('date_heure', $today)->where('type', 'sortie')->count(),
-            'anomalies' => Pointage::whereDate('date_heure', $today)->where('est_anomalie', true)->count(),
+            'arrivees' => Pointage::whereDate('date_heure', $today)
+                ->where('type', 'entree')->count(),
+
+            'departs' => Pointage::whereDate('date_heure', $today)
+                ->where('type', 'sortie')->count(),
+
+            'anomalies' => Pointage::whereDate('date_heure', $today)
+                ->where('est_anomalie', true)->count(),
         ];
 
-        return view('gestion.pointage.scanner', compact('pointagesJour', 'stats'));
+        return view('gestion.pointage.scanner', compact(
+            'pointagesJour',
+            'stats'
+        ));
     }
-
-    // =================================================================
-    // ⭐ ENREGISTRER — avec délai minimum de 3 minutes
-    // =================================================================
 
     public function enregistrer(Request $request)
     {
-        $request->validate(['employee_code' => ['required', 'string']]);
-        $code = trim($request->input('employee_code'));
+        $request->validate([
+            'employee_code' => ['required', 'string'],
+        ]);
 
-        Log::info('Pointage - Code reçu', ['code' => $code]);
-
-        // ⭐ 1. Chercher l'employé par matricule
-        $employe = Employe::where('matricule', $code)->first();
+        $employe = Employe::where(
+            'matricule',
+            trim($request->employee_code)
+        )->first();
 
         if (!$employe) {
             return response()->json([
                 'success' => false,
-                'type'    => 'error',
-                'message' => "Employé introuvable : {$code}",
+                'message' => 'Employé introuvable.',
             ], 404);
         }
 
         if ($employe->statut !== 'actif') {
             return response()->json([
                 'success' => false,
-                'type'    => 'error',
-                'message' => "L'employé {$employe->nom_complet} est inactif.",
+                'message' => 'Employé inactif.',
             ], 403);
         }
 
         $today = now()->toDateString();
 
-        // ⭐ 2. Chercher l'entrée et la sortie du jour
         $entree = Pointage::where('employe_id', $employe->id)
             ->whereDate('date_heure', $today)
             ->where('type', 'entree')
@@ -92,137 +84,96 @@ class PointageController extends Controller
             ->where('type', 'sortie')
             ->first();
 
-        // ⭐ 3. CAS 1 : Aucune entrée → CHECK-IN
         if (!$entree) {
             return $this->enregistrerCheckIn($employe);
         }
 
-        // ⭐ 4. CAS 2 : Déjà entrée ET sortie → REFUS
-        if ($entree && $sortie) {
+        if ($sortie) {
             return response()->json([
                 'success' => false,
-                'type'    => 'already_completed',
-                'message' => "{$employe->prenom} {$employe->nom} a déjà pointé son arrivée ET son départ aujourd'hui.",
+                'type' => 'already_completed',
+                'message' => 'Arrivée et départ déjà enregistrés.',
             ], 409);
         }
 
-        // ⭐ 5. CAS 3 : Entrée existe mais PAS de sortie → Vérifier le délai
-        $maintenant   = now();
-        $heureEntree  = Carbon::parse($entree->date_heure);
-        $minutesEcoulees = $heureEntree->diffInMinutes($maintenant);
-        $minutesRestantes = max(0, self::DELAI_MIN_CHECKOUT - $minutesEcoulees);
+        $minutes = $entree->date_heure->diffInMinutes(now());
 
-        Log::info('Pointage - Vérification délai', [
-            'employe'         => $employe->matricule,
-            'heure_entree'    => $heureEntree->format('H:i:s'),
-            'minutes_ecoulees'=> $minutesEcoulees,
-            'delai_requis'    => self::DELAI_MIN_CHECKOUT,
-            'minutes_restantes' => $minutesRestantes,
-        ]);
-
-        // ⭐ 5a. Trop tôt → REFUS avec message
-        if ($minutesEcoulees < self::DELAI_MIN_CHECKOUT) {
+        if ($minutes < self::DELAI_MIN_CHECKOUT) {
             return response()->json([
-                'success'  => false,
-                'type'     => 'too_early',
-                'message'  => "⏱️ Veuillez patienter {$minutesRestantes} minute(s) avant de pouvoir pointer votre départ.",
-                'minutes_ecoulees'  => $minutesEcoulees,
-                'minutes_restantes' => $minutesRestantes,
-                'heure_entree'      => $heureEntree->format('H:i:s'),
-                'delai_requis'      => self::DELAI_MIN_CHECKOUT,
+                'success' => false,
+                'type' => 'too_early',
+                'message' => 'Veuillez patienter avant de pointer votre départ.',
+                'minutes_restantes' => self::DELAI_MIN_CHECKOUT - $minutes,
             ], 429);
         }
 
-        // ⭐ 5b. Délai respecté → CHECK-OUT
         return $this->enregistrerCheckOut($employe, $entree);
     }
 
-    // =================================================================
-    // ⭐ HELPERS — Enregistrement
-    // =================================================================
-
-    /**
-     * Enregistre un CHECK-IN.
-     */
     private function enregistrerCheckIn(Employe $employe)
     {
+        $maintenant = now();
+
         $pointage = Pointage::create([
             'employe_id' => $employe->id,
-            'date_heure' => now(),
-            'type'       => 'entree',
-            'source'     => 'qr_code',
+            'date_heure' => $maintenant,
+            'type' => 'entree',
+            'source' => 'qr_code',
+            'type_scan' => 'qr_code',
         ]);
+
+        if ($maintenant->format('H:i:s') > PointageService::HEURE_LIMITE_ARRIVEE) {
+            $this->pointageService->marquerAnomalie(
+                $pointage,
+                'Retard de ' . $maintenant->diffInMinutes(
+                    $maintenant->copy()->setTime(8, 15)
+                ) . ' minutes'
+            );
+        }
 
         $this->pointageService->mettreAJourPresence($employe->id);
 
-        Log::info('Pointage - CHECK-IN', [
-            'employe' => $employe->matricule,
-            'heure'   => now()->format('H:i:s'),
-        ]);
-
         return response()->json([
-            'success'  => true,
-            'type'     => 'check_in',
-            'message'  => "✅ Arrivée enregistrée pour {$employe->nom_complet}",
-            'employee' => [
-                'prenom' => $employe->prenom,
-                'nom'    => $employe->nom,
-                'code'   => $employe->matricule,
-                'poste'  => $employe->poste?->nom,
-            ],
-            'heure'    => now()->format('H:i:s'),
-            'message_extra' => "Vous pourrez pointer votre départ dans " . self::DELAI_MIN_CHECKOUT . " minutes.",
-            'delai_requis'  => self::DELAI_MIN_CHECKOUT,
+            'success' => true,
+            'type' => 'check_in',
+            'message' => 'Arrivée enregistrée pour ' . $employe->nom_complet,
+            'heure' => $maintenant->format('H:i:s'),
         ]);
     }
 
-    /**
-     * Enregistre un CHECK-OUT.
-     */
-    private function enregistrerCheckOut(Employe $employe, Pointage $entree)
-    {
+    private function enregistrerCheckOut(
+        Employe $employe,
+        Pointage $entree
+    ) {
+        $maintenant = now();
+
         $pointage = Pointage::create([
             'employe_id' => $employe->id,
-            'date_heure' => now(),
-            'type'       => 'sortie',
-            'source'     => 'qr_code',
+            'date_heure' => $maintenant,
+            'type' => 'sortie',
+            'source' => 'qr_code',
+            'type_scan' => 'qr_code',
         ]);
+
+        if ($maintenant->format('H:i:s') < PointageService::HEURE_MIN_DEPART) {
+            $this->pointageService->marquerAnomalie(
+                $pointage,
+                'Départ anticipé : avant 16:45'
+            );
+        }
 
         $this->pointageService->mettreAJourPresence($employe->id);
 
-        // Calculer la durée de travail
-        $heureEntree = Carbon::parse($entree->date_heure);
-        $heureSortie = now();
-        $dureeMinutes = $heureEntree->diffInMinutes($heureSortie);
-        $dureeHeures  = round($dureeMinutes / 60, 2);
-
-        Log::info('Pointage - CHECK-OUT', [
-            'employe' => $employe->matricule,
-            'heure'   => $heureSortie->format('H:i:s'),
-            'duree'   => "{$dureeHeures}h",
-        ]);
+        $duree = $entree->date_heure->diffInMinutes($maintenant);
 
         return response()->json([
-            'success'       => true,
-            'type'          => 'check_out',
-            'message'       => "✅ Départ enregistré pour {$employe->nom_complet}",
-            'employee'      => [
-                'prenom' => $employe->prenom,
-                'nom'    => $employe->nom,
-                'code'   => $employe->matricule,
-                'poste'  => $employe->poste?->nom,
-            ],
-            'heure_arrivee' => $heureEntree->format('H:i:s'),
-            'heure_depart'  => $heureSortie->format('H:i:s'),
-            'duree_minutes' => $dureeMinutes,
-            'duree_heures'  => $dureeHeures,
-            'message_extra' => "Durée de travail : {$dureeHeures}h",
+            'success' => true,
+            'type' => 'check_out',
+            'message' => 'Départ enregistré pour ' . $employe->nom_complet,
+            'heure' => $maintenant->format('H:i:s'),
+            'duree_heures' => round($duree / 60, 2),
         ]);
     }
-
-    // =================================================================
-    // LISTE / HISTORIQUE / CORRECTION / ANOMALIES
-    // =================================================================
 
     public function liste()
     {
@@ -230,26 +181,11 @@ class PointageController extends Controller
 
         $pointages = Pointage::with('employe')
             ->whereDate('date_heure', $today)
-            ->orderByDesc('date_heure')
-            ->get()
-            ->map(fn($p) => [
-                'id'        => $p->id,
-                'matricule' => $p->employe?->matricule,
-                'nom'       => $p->employe?->nom_complet,
-                'type'      => $p->type,
-                'heure'     => $p->date_heure?->format('H:i:s'),
-                'anomalie'  => $p->est_anomalie,
-            ]);
-
-        $stats = [
-            'arrivees'  => Pointage::whereDate('date_heure', $today)->where('type', 'entree')->count(),
-            'departs'   => Pointage::whereDate('date_heure', $today)->where('type', 'sortie')->count(),
-            'anomalies' => Pointage::whereDate('date_heure', $today)->where('est_anomalie', true)->count(),
-        ];
+            ->latest('date_heure')
+            ->get();
 
         return response()->json([
-            'pointages'  => $pointages,
-            'stats'      => $stats,
+            'pointages' => $pointages,
             'updated_at' => now()->format('H:i:s'),
         ]);
     }
