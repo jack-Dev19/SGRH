@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Employe;
 use App\Models\Pointage;
 use App\Services\PointageService;
+use App\Services\NotificationService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -291,8 +292,11 @@ class PointageController extends Controller
         return view('gestion.pointage.corriger', compact('pointage'));
     }
 
-    public function updateCorrection(Request $request, string $id)
-    {
+    public function updateCorrection(
+        Request $request,
+        string $id,
+        NotificationService $notificationService
+    ) {
         $pointage = Pointage::findOrFail($id);
 
         $validated = $request->validate([
@@ -305,6 +309,22 @@ class PointageController extends Controller
             'date_heure' => $validated['date_heure'],
             'type'       => $validated['type'],
         ], $validated['raison']);
+
+        $pointage->refresh()->load('employe.user');
+
+        if ($pointage->employe?->user) {
+            $typePointage = $pointage->type === 'entree' ? 'entrée' : 'sortie';
+            $dateHeure = Carbon::parse($pointage->date_heure)->format('d/m/Y à H:i');
+        
+            $notificationService->envoyer(
+                $pointage->employe->user,
+                'Pointage corrigé',
+                "Votre pointage de {$typePointage} du {$dateHeure} a été corrigé par le service RH. Motif : {$validated['raison']}",
+                'info',
+                null,
+                'presence'
+            );
+        }
 
         return redirect()
             ->route('gestion.pointage.historique')

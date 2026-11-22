@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Employe;
 use App\Models\Evaluation;
 use App\Models\NiveauAppreciation;
+use App\Services\NotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\View\View;
@@ -72,8 +73,10 @@ class EvaluationController extends Controller
     /**
      * Enregistrer une nouvelle évaluation.
      */
-    public function store(Request $request)
-    {
+    public function store(
+        Request $request,
+        NotificationService $notificationService
+    ) {
         $validated = $request->validate([
             'employe_id'              => ['required', 'exists:employes,id'],
             'titre'                   => ['required', 'string', 'max:150'],
@@ -93,7 +96,23 @@ class EvaluationController extends Controller
         // L'évaluateur est l'utilisateur connecté
         $validated['evaluateur_id'] = Auth::id();
 
-        Evaluation::create($validated);
+        $evaluation = Evaluation::create($validated);
+
+        // Notifier l'employé si l'évaluation est déjà terminée
+        if ($evaluation->statut === 'terminee') {
+            $evaluation->load('employe.user');
+
+            if ($evaluation->employe?->user) {
+                $notificationService->envoyer(
+                    $evaluation->employe->user,
+                    'Évaluation de performance terminée',
+                    "Votre évaluation « {$evaluation->titre} » est terminée. Vous pouvez consulter les résultats auprès du service RH.",
+                    'success',
+                    null,
+                    'performance'
+                );
+            }
+        }
 
         return redirect()
             ->route('gestion.evaluations.index')
@@ -125,8 +144,11 @@ class EvaluationController extends Controller
     /**
      * Enregistrer les modifications.
      */
-    public function update(Request $request, string $id)
-    {
+    public function update(
+        Request $request,
+        string $id,
+        NotificationService $notificationService
+    ) {
         $evaluation = Evaluation::findOrFail($id);
 
         $validated = $request->validate([
@@ -145,7 +167,25 @@ class EvaluationController extends Controller
             'statut'                  => ['required', 'in:en_cours,terminee,annulee'],
         ]);
 
+        $ancienStatut = $evaluation->statut;
+
         $evaluation->update($validated);
+
+        // Notifier uniquement lors du passage à l'état terminée
+        if ($ancienStatut !== 'terminee' && $evaluation->statut === 'terminee') {
+            $evaluation->load('employe.user');
+        
+            if ($evaluation->employe?->user) {
+                $notificationService->envoyer(
+                    $evaluation->employe->user,
+                    'Évaluation de performance terminée',
+                    "Votre évaluation « {$evaluation->titre} » est terminée. Vous pouvez consulter les résultats auprès du service RH.",
+                    'success',
+                    null,
+                    'performance'
+                );
+            }
+        }
 
         return redirect()
             ->route('gestion.evaluations.index')

@@ -297,7 +297,9 @@
                         </div>
                         <div class="{{ $c['bg'] }} {{ $c['border'] }} border rounded-xl p-2.5 flex flex-col justify-center">
                             <p class="text-[9px] font-bold text-slate-500 uppercase tracking-wider mb-1">Appréciation</p>
-                            <p class="text-[11px] font-bold {{ $c['text'] }} leading-tight truncate">{{ $evaluation->niveauAppreciation?->nom ?? '—' }}</p>
+                            <p class="text-[11px] font-bold {{ $c['text'] }} leading-tight truncate">
+                                {{ $evaluation->appreciation ? ucfirst($evaluation->appreciation) : ($evaluation->niveauAppreciation?->nom ?? '—') }}
+                            </p>
                         </div>
                     </div>
 
