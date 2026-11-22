@@ -98,11 +98,20 @@ class EvaluationController extends Controller
 
         $evaluation = Evaluation::create($validated);
 
-        // Notifier l'employé si l'évaluation est déjà terminée
-        if ($evaluation->statut === 'terminee') {
-            $evaluation->load('employe.user');
+        // Notifier l'employé selon le statut initial de l'évaluation
+        $evaluation->load('employe.user');
 
-            if ($evaluation->employe?->user) {
+        if ($evaluation->employe?->user) {
+            if ($evaluation->statut === 'en_cours') {
+                $notificationService->envoyer(
+                    $evaluation->employe->user,
+                    'Évaluation de performance planifiée',
+                    "Une évaluation de performance intitulée « {$evaluation->titre} » a été planifiée pour vous.",
+                    'info',
+                    null,
+                    'performance'
+                );
+            } elseif ($evaluation->statut === 'terminee') {
                 $notificationService->envoyer(
                     $evaluation->employe->user,
                     'Évaluation de performance terminée',
@@ -171,11 +180,20 @@ class EvaluationController extends Controller
 
         $evaluation->update($validated);
 
-        // Notifier uniquement lors du passage à l'état terminée
-        if ($ancienStatut !== 'terminee' && $evaluation->statut === 'terminee') {
-            $evaluation->load('employe.user');
+        // Notifier l'employé lors d'un changement de statut pertinent
+        $evaluation->load('employe.user');
         
-            if ($evaluation->employe?->user) {
+        if ($evaluation->employe?->user) {
+            if ($ancienStatut !== 'en_cours' && $evaluation->statut === 'en_cours') {
+                $notificationService->envoyer(
+                    $evaluation->employe->user,
+                    'Évaluation de performance planifiée',
+                    "Une évaluation de performance intitulée « {$evaluation->titre} » a été planifiée pour vous.",
+                    'info',
+                    null,
+                    'performance'
+                );
+            } elseif ($ancienStatut !== 'terminee' && $evaluation->statut === 'terminee') {
                 $notificationService->envoyer(
                     $evaluation->employe->user,
                     'Évaluation de performance terminée',

@@ -15,7 +15,8 @@ use Carbon\Carbon;
 class PointageController extends Controller
 {
     public function __construct(
-        protected PointageService $pointageService
+        protected PointageService $pointageService,
+        protected NotificationService $notificationService
     ) {}
 
     public const DELAI_MIN_CHECKOUT = 3;
@@ -123,12 +124,29 @@ class PointageController extends Controller
         ]);
 
         if ($maintenant->format('H:i:s') > PointageService::HEURE_LIMITE_ARRIVEE) {
-            $this->pointageService->marquerAnomalie(
-                $pointage,
-                'Retard de ' . $maintenant->diffInMinutes(
-                    $maintenant->copy()->setTime(8, 15)
-                ) . ' minutes'
+            $heureLimite = $maintenant->copy()->setTime(8, 15);
+
+            $minutesRetard = max(
+                0,
+                (int) $heureLimite->diffInMinutes($maintenant, false)
             );
+
+            $retard = "Retard de {$minutesRetard} minutes";
+
+            $this->pointageService->marquerAnomalie($pointage, $retard);
+
+            $employe->loadMissing('user');
+
+            if ($employe->user) {
+                $this->notificationService->envoyer(
+                    $employe->user,
+                    'Retard à l’arrivée',
+                    "Votre pointage d’arrivée du {$maintenant->format('d/m/Y à H:i')} a été enregistré comme retard. {$retard}.",
+                    'info',
+                    null,
+                    'presence'
+                );
+            }
         }
 
         $this->pointageService->mettreAJourPresence($employe->id);
@@ -156,10 +174,29 @@ class PointageController extends Controller
         ]);
 
         if ($maintenant->format('H:i:s') < PointageService::HEURE_MIN_DEPART) {
-            $this->pointageService->marquerAnomalie(
-                $pointage,
-                'Départ anticipé : avant 16:45'
+            $heureLimite = $maintenant->copy()->setTime(16, 45);
+        
+            $minutesAnticipees = max(
+                0,
+                (int) $maintenant->diffInMinutes($heureLimite, false)
             );
+        
+            $anomalie = "Départ anticipé de {$minutesAnticipees} minutes";
+        
+            $this->pointageService->marquerAnomalie($pointage, $anomalie);
+        
+            $employe->loadMissing('user');
+        
+            if ($employe->user) {
+                $this->notificationService->envoyer(
+                    $employe->user,
+                    'Départ anticipé',
+                    "Votre pointage de sortie du {$maintenant->format('d/m/Y à H:i')} a été enregistré comme départ anticipé. {$anomalie}.",
+                    'info',
+                    null,
+                    'presence'
+                );
+            }
         }
 
         $this->pointageService->mettreAJourPresence($employe->id);
