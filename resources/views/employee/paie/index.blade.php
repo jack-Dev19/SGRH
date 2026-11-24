@@ -53,21 +53,17 @@
     @forelse($bulletins as $bulletin)
 
         @php
-            $mois = (int) $bulletin->periode;
-
-            $nomMois = \Carbon\Carbon::create()
-                ->month($mois)
-                ->locale('fr')
-                ->translatedFormat('F');
-
+            // La période est déjà enregistrée sous forme de texte : "Avril", "Novembre", etc.
+            $nomMois = $bulletin->periode;
+        
             $statut = strtolower((string) $bulletin->statut);
-
+        
             $couleurs = [
                 'gradient' => 'from-indigo-600 to-blue-600',
                 'border' => 'border-indigo-100',
             ];
-
-            if (in_array($statut, ['payee', 'payé', 'payee'])) {
+        
+            if (in_array($statut, ['payee', 'payé'])) {
                 $couleurs = [
                     'gradient' => 'from-emerald-600 to-green-600',
                     'border' => 'border-emerald-100',

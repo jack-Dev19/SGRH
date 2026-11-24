@@ -1,11 +1,13 @@
-
 @extends('layouts.dashboard')
 
 @section('title', 'Paramètres')
 
 @section('content')
 
-<div class="max-w-7xl mx-auto space-y-6">
+<div
+    class="max-w-7xl mx-auto space-y-6"
+    x-data="{ activeTab: 'general' }"
+>
 
     {{-- En-tête du centre de paramètres --}}
     <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
@@ -16,7 +18,7 @@
             </h1>
 
             <p class="text-sm text-slate-500 mt-1">
-                Configurez et gérez les paramètres généraux de votre application SGRH.
+                Configurez et gérez les paramètres de votre application SGRH.
             </p>
         </div>
 
@@ -52,40 +54,103 @@
                     Configuration
                 </h2>
 
-                <nav class="space-y-1">
+                <nav class="space-y-1" aria-label="Rubriques des paramètres">
 
-                    {{-- Les liens seront rendus interactifs à l'étape suivante --}}
-                    <a href="#general" class="block px-3 py-2.5 rounded-lg text-sm font-medium text-blue-700 bg-blue-50">
+                    <button
+                        type="button"
+                        @click="activeTab = 'general'"
+                        :class="activeTab === 'general'
+                            ? 'bg-blue-50 text-blue-700'
+                            : 'text-slate-600 hover:bg-slate-50'"
+                        class="w-full text-left px-3 py-2.5 rounded-lg text-sm font-medium transition"
+                        :aria-current="activeTab === 'general' ? 'page' : null"
+                    >
                         Général
-                    </a>
+                    </button>
 
-                    <a href="#notifications" class="block px-3 py-2.5 rounded-lg text-sm text-slate-600 hover:bg-slate-50">
+                    <button
+                        type="button"
+                        @click="activeTab = 'notifications'"
+                        :class="activeTab === 'notifications'
+                            ? 'bg-blue-50 text-blue-700'
+                            : 'text-slate-600 hover:bg-slate-50'"
+                        class="w-full text-left px-3 py-2.5 rounded-lg text-sm font-medium transition"
+                        :aria-current="activeTab === 'notifications' ? 'page' : null"
+                    >
                         Notifications
-                    </a>
+                    </button>
 
-                    <a href="#securite" class="block px-3 py-2.5 rounded-lg text-sm text-slate-600 hover:bg-slate-50">
+                    <button
+                        type="button"
+                        @click="activeTab = 'securite'"
+                        :class="activeTab === 'securite'
+                            ? 'bg-blue-50 text-blue-700'
+                            : 'text-slate-600 hover:bg-slate-50'"
+                        class="w-full text-left px-3 py-2.5 rounded-lg text-sm font-medium transition"
+                        :aria-current="activeTab === 'securite' ? 'page' : null"
+                    >
                         Sécurité
-                    </a>
+                    </button>
 
-                    <a href="#paie" class="block px-3 py-2.5 rounded-lg text-sm text-slate-600 hover:bg-slate-50">
+                    <button
+                        type="button"
+                        @click="activeTab = 'paie'"
+                        :class="activeTab === 'paie'
+                            ? 'bg-blue-50 text-blue-700'
+                            : 'text-slate-600 hover:bg-slate-50'"
+                        class="w-full text-left px-3 py-2.5 rounded-lg text-sm font-medium transition"
+                        :aria-current="activeTab === 'paie' ? 'page' : null"
+                    >
                         Paie
-                    </a>
+                    </button>
 
-                    <a href="#conges" class="block px-3 py-2.5 rounded-lg text-sm text-slate-600 hover:bg-slate-50">
+                    <button
+                        type="button"
+                        @click="activeTab = 'conges'"
+                        :class="activeTab === 'conges'
+                            ? 'bg-blue-50 text-blue-700'
+                            : 'text-slate-600 hover:bg-slate-50'"
+                        class="w-full text-left px-3 py-2.5 rounded-lg text-sm font-medium transition"
+                        :aria-current="activeTab === 'conges' ? 'page' : null"
+                    >
                         Congés
-                    </a>
+                    </button>
 
-                    <a href="#presence" class="block px-3 py-2.5 rounded-lg text-sm text-slate-600 hover:bg-slate-50">
+                    <button
+                        type="button"
+                        @click="activeTab = 'presence'"
+                        :class="activeTab === 'presence'
+                            ? 'bg-blue-50 text-blue-700'
+                            : 'text-slate-600 hover:bg-slate-50'"
+                        class="w-full text-left px-3 py-2.5 rounded-lg text-sm font-medium transition"
+                        :aria-current="activeTab === 'presence' ? 'page' : null"
+                    >
                         Présence
-                    </a>
+                    </button>
 
-                    <a href="#performance" class="block px-3 py-2.5 rounded-lg text-sm text-slate-600 hover:bg-slate-50">
+                    <button
+                        type="button"
+                        @click="activeTab = 'performance'"
+                        :class="activeTab === 'performance'
+                            ? 'bg-blue-50 text-blue-700'
+                            : 'text-slate-600 hover:bg-slate-50'"
+                        class="w-full text-left px-3 py-2.5 rounded-lg text-sm font-medium transition"
+                        :aria-current="activeTab === 'performance' ? 'page' : null"
+                    >
                         Performance
-                    </a>
+                    </button>
 
-                    <a href="#recrutement" class="block px-3 py-2.5 rounded-lg text-sm text-slate-600 hover:bg-slate-50">
+                    <button
+                        type="button"
+                        @click="activeTab = 'recrutement'"
+                        :class="activeTab === 'recrutement'
+                            ? 'bg-blue-50 text-blue-700'
+                            : 'text-slate-600 hover:bg-slate-50'"
+                        class="w-full text-left px-3 py-2.5 rounded-lg text-sm font-medium transition"
+                        :aria-current="activeTab === 'recrutement' ? 'page' : null"
+                    >
                         Recrutement
-                    </a>
+                    </button>
 
                 </nav>
 
@@ -96,15 +161,41 @@
         <main class="lg:col-span-9">
 
             <div class="bg-white border border-slate-200 rounded-xl p-6 min-h-[400px]">
-            
-                {{-- Section Général --}}
-                @include('admin.parametres.partials.general')
-            
-                {{-- Section Notifications --}}
-                @include('admin.parametres.partials.notifications')
-            
+
+                {{-- Contenu Général --}}
+                <div x-show="activeTab === 'general'" x-cloak>
+                    @include('admin.parametres.partials.general')
+                </div>
+
+                {{-- Contenu Notifications --}}
+                <div x-show="activeTab === 'notifications'" x-cloak>
+                    @include('admin.parametres.partials.notifications')
+                </div>
+
+                {{-- Contenus à développer --}}
+                <div
+                    x-show="!['general', 'notifications'].includes(activeTab)"
+                    x-cloak
+                    class="py-10 text-center"
+                >
+                    <h2 class="text-lg font-semibold text-slate-800">
+                        <span x-text="{
+                            securite: 'Sécurité',
+                            paie: 'Paie',
+                            conges: 'Congés',
+                            presence: 'Présence',
+                            performance: 'Performance',
+                            recrutement: 'Recrutement'
+                        }[activeTab]"></span>
+                    </h2>
+
+                    <p class="text-sm text-slate-500 mt-2">
+                        Le contenu de cette rubrique sera ajouté lors de son développement.
+                    </p>
+                </div>
+
             </div>
-        
+
         </main>
 
     </div>

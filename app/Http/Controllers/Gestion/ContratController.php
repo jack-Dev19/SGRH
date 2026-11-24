@@ -8,6 +8,7 @@ use App\Models\Employe;
 use App\Services\ContratPdfService;
 use App\Services\ConversionDeviseService;
 use App\Services\FichePaieService;
+use App\Services\NotificationService;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
@@ -68,7 +69,10 @@ class ContratController extends Controller
         return view('gestion.contrats.create', compact('employes'));
     }
 
-    public function store(Request $request)
+    public function store(
+        Request $request,
+        NotificationService $notificationService
+    )
     {
         $validated = $request->validate([
             'employe_id'          => ['required', 'exists:employes,id'],
@@ -87,7 +91,21 @@ class ContratController extends Controller
             'type.required'       => 'Veuillez sélectionner un type de contrat.',
         ]);
 
-        Contrat::create($validated);
+        $contrat = Contrat::create($validated);
+
+        // Notifier l'employé de la création de son contrat
+        $contrat->load('employe.user');
+        
+        if ($contrat->employe?->user) {
+            $notificationService->envoyer(
+                $contrat->employe->user,
+                'Nouveau contrat de travail',
+                "Un contrat de travail « {$contrat->numero} » a été créé pour vous. Consultez votre espace employé pour plus de détails.",
+                'info',
+                null,
+                'contrats'
+            );
+        }
 
         return redirect()
             ->route('gestion.contrats.index')
@@ -120,9 +138,10 @@ class ContratController extends Controller
     public function update(
         Request $request,
         string $id,
-        ConversionDeviseService $conversionService
+        ConversionDeviseService $conversionService,
+        NotificationService $notificationService
     ) {
-        $contrat = Contrat::findOrFail($id);
+        $contrat = Contrat::with('employe.user')->findOrFail($id);
 
         $validated = $request->validate([
             'employe_id'          => ['required', 'exists:employes,id'],
@@ -160,7 +179,31 @@ class ContratController extends Controller
         }
 
         // Enregistrer les données après conversion.
+        $ancienStatut = $contrat->statut;
         $contrat->update($validated);
+
+        // Notifier l'employé de la modification de son contrat.
+        if ($contrat->employe?->user) {
+            if ($ancienStatut !== $contrat->statut) {
+                $notificationService->envoyer(
+                    $contrat->employe->user,
+                    'Statut du contrat modifié',
+                    "Le statut de votre contrat « {$contrat->numero} » est passé de « {$ancienStatut} » à « {$contrat->statut} ».",
+                    'warning',
+                    null,
+                    'contrats'
+                );
+            } else {
+                $notificationService->envoyer(
+                    $contrat->employe->user,
+                    'Contrat de travail modifié',
+                    "Votre contrat de travail « {$contrat->numero} » a été modifié. Consultez votre espace employé pour plus de détails.",
+                    'info',
+                    null,
+                    'contrats'
+                );
+            }
+        }
 
         return redirect()
             ->route('gestion.contrats.index')

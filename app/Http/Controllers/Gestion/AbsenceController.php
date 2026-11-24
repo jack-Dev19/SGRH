@@ -99,8 +99,10 @@ class AbsenceController extends Controller
         return view('gestion.absences.create', compact('employes'));
     }
 
-    public function store(Request $request)
-    {
+    public function store(
+        Request $request,
+        NotificationService $notificationService
+    ) {
         $validated = $request->validate([
             'employe_id'    => ['required', 'exists:employes,id'],
             'date_debut'    => ['required', 'date'],
@@ -133,6 +135,28 @@ class AbsenceController extends Controller
         }
 
         $absence = Absence::create($validated);
+
+        // Notifier l'employé de l'enregistrement de son absence.
+        $absence->load('employe.user');
+        
+        if ($absence->employe?->user) {
+            $statutMessage = match ($absence->statut) {
+                'en_attente' => 'enregistrée et en attente de validation',
+                'justifie' => 'enregistrée et justifiée',
+                'non_justifie' => 'enregistrée et non justifiée',
+                'autorise' => 'enregistrée et autorisée',
+                default => 'enregistrée',
+            };
+        
+            $notificationService->envoyer(
+                $absence->employe->user,
+                'Absence enregistrée',
+                "Une absence du {$absence->date_debut->format('d/m/Y')} au {$absence->date_fin->format('d/m/Y')} a été {$statutMessage}.",
+                'info',
+                null,
+                'absences'
+            );
+        }
 
         // Log
         HistoriqueAction::create([
@@ -171,9 +195,13 @@ class AbsenceController extends Controller
         return view('gestion.absences.edit', compact('absence', 'employes'));
     }
 
-    public function update(Request $request, string $id)
-    {
+    public function update(
+        Request $request,
+        string $id,
+        NotificationService $notificationService
+    ) {
         $absence = Absence::findOrFail($id);
+        $ancienStatut = $absence->statut;
 
         $validated = $request->validate([
             'employe_id'    => ['required', 'exists:employes,id'],
@@ -210,6 +238,40 @@ class AbsenceController extends Controller
 
         $absence->update($validated);
 
+        // Notifier l'employé après la modification de son absence.
+        $absence->load('employe.user');
+
+        if ($absence->employe?->user) {
+            $statutModifie = $ancienStatut !== $absence->statut;
+
+            $libellesStatuts = [
+                'en_attente'   => 'en attente de validation',
+                'justifie'     => 'justifiée',
+                'non_justifie' => 'non justifiée',
+                'autorise'     => 'autorisée',
+                'annule'       => 'annulée',
+            ];
+
+            $statutMessage = $libellesStatuts[$absence->statut] ?? $absence->statut;
+
+            $titre = $statutModifie
+                ? 'Statut de votre absence modifié'
+                : 'Absence modifiée';
+
+            $message = $statutModifie
+                ? "Le statut de votre absence du {$absence->date_debut->format('d/m/Y')} au {$absence->date_fin->format('d/m/Y')} a été modifié : elle est maintenant {$statutMessage}."
+                : "Votre absence du {$absence->date_debut->format('d/m/Y')} au {$absence->date_fin->format('d/m/Y')} a été modifiée.";
+
+            $notificationService->envoyer(
+                $absence->employe->user,
+                $titre,
+                $message,
+                $statutModifie ? 'info' : 'info',
+                null,
+                'absences'
+            );
+        }
+
         // Log
         HistoriqueAction::create([
             'user_id'     => Auth::id(),
@@ -230,6 +292,7 @@ class AbsenceController extends Controller
     public function destroy(string $id)
     {
         $absence = Absence::findOrFail($id);
+        $ancienStatut = $absence->statut;
 
         // Supprimer le justificatif
         if ($absence->justificatif && Storage::disk('public')->exists($absence->justificatif)) {

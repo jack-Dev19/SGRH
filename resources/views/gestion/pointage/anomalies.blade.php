@@ -104,17 +104,26 @@
 
                             <p class="text-xs text-slate-500 mt-1">
                                 Type :
-                                {{ $a['type'] === 'entree' ? 'Arrivée' : 'Départ' }}
+                                @if(($a['source'] ?? 'qr_code') === 'manuel')
+                                    Présence manuelle
+                                @else
+                                    {{ $a['type'] === 'entree' ? 'Arrivée' : 'Départ' }}
+                                @endif
                             </p>
 
                         </div>
 
-                        <a
-                            href="{{ route('gestion.pointage.corriger', $a['id']) }}"
-                            class="inline-flex justify-center px-4 py-2 rounded-lg bg-purple-50 text-purple-700 hover:bg-purple-100 text-sm font-bold"
-                        >
-                            Corriger
-                        </a>
+                        @if(($a['source'] ?? 'qr_code') === 'manuel')
+                            <a href="{{ route('gestion.presences.edit', $a['id']) }}"
+                            class="inline-flex justify-center px-4 py-2 rounded-lg bg-purple-50 text-purple-700 hover:bg-purple-100 text-sm font-bold">
+                                Modifier
+                            </a>
+                        @else
+                            <a href="{{ route('gestion.pointage.corriger', $a['id']) }}"
+                            class="inline-flex justify-center px-4 py-2 rounded-lg bg-purple-50 text-purple-700 hover:bg-purple-100 text-sm font-bold">
+                                Corriger
+                            </a>
+                        @endif
 
                     </div>
 

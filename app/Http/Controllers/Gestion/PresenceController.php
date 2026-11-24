@@ -4,8 +4,12 @@ namespace App\Http\Controllers\Gestion;
 
 use App\Http\Controllers\Controller;
 use App\Models\Employe;
+use App\Models\HistoriqueAction;
 use App\Models\Presence;
+use App\Services\NotificationService;
+use App\Services\PointageService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\View\View;
 
 /**
@@ -83,7 +87,70 @@ class PresenceController extends Controller
             'commentaire'        => ['nullable', 'string', 'max:255'],
         ]);
 
-        Presence::create($validated);
+        $presence = Presence::create($validated);
+
+        // Recharger les valeurs enregistrées en base de données.
+        $presence->refresh();
+        
+        // Détecter les anomalies de la présence manuelle.
+        app(PointageService::class)->analyserPresenceManuelle($presence);
+        
+        // Actualiser les données après analyse.
+        $presence->refresh();
+
+        // Enregistrer l'action dans l'historique.
+        HistoriqueAction::create([
+            'user_id'     => Auth::id(),
+            'action'      => 'creation',
+            'module'      => 'presences',
+            'description' => 'Présence créée pour l’employé ID '
+                . $presence->employe_id
+                . ' le '
+                . \Illuminate\Support\Carbon::parse($presence->date)->format('d/m/Y')
+                . ' (statut : '
+                . $presence->statut
+                . ').',
+            'type_cible'  => 'presence',
+            'cible_id'    => $presence->id,
+            'nouvelle_valeur' => $presence->only([
+                'id',
+                'employe_id',
+                'date',
+                'heure_entree',
+                'heure_sortie',
+                'statut',
+                'retard_minutes',
+                'heures_travaillees',
+                'commentaire',
+            ]),
+            'adresse_ip' => $request->ip(),
+            'user_agent' => $request->userAgent(),
+        ]);
+
+        // Notifier l'employé uniquement en cas d'absence ou de retard.
+        if (in_array($presence->statut, ['absent', 'retard'], true)) {
+            $employe = Employe::with('user')->find($presence->employe_id);
+
+            if ($employe?->user) {
+                $date = \Illuminate\Support\Carbon::parse($presence->date)->format('d/m/Y');
+
+                $message = $presence->statut === 'absent'
+                    ? 'Une absence a été enregistrée pour vous le ' . $date . '.'
+                    : 'Un retard de ' . ($presence->retard_minutes ?? 0)
+                        . ' minute(s) a été enregistré pour vous le ' . $date . '.';
+
+                app(NotificationService::class)->envoyer(
+                    $employe->user,
+                    $presence->statut === 'absent'
+                        ? 'Absence enregistrée'
+                        : 'Retard enregistré',
+                    $message,
+                    'warning',
+                    null,
+                    'presence'
+                );
+            }
+        }
 
         return redirect()
             ->route('gestion.presences.index')
@@ -117,6 +184,19 @@ class PresenceController extends Controller
     public function update(Request $request, string $id)
     {
         $presence = Presence::findOrFail($id);
+        $ancienStatut = $presence->statut;
+
+        // Conserver les anciennes valeurs avant modification.
+        $anciennesValeurs = $presence->only([
+            'employe_id',
+            'date',
+            'heure_entree',
+            'heure_sortie',
+            'statut',
+            'retard_minutes',
+            'heures_travaillees',
+            'commentaire',
+        ]);
 
         $validated = $request->validate([
             'employe_id'         => ['required', 'exists:employes,id'],
@@ -131,17 +211,106 @@ class PresenceController extends Controller
 
         $presence->update($validated);
 
+        // Détecter les anomalies après modification.
+        app(PointageService::class)->analyserPresenceManuelle($presence);
+
+        // Actualiser les données après analyse.
+        $presence->refresh();
+
+        // Enregistrer la modification dans l'historique.
+        HistoriqueAction::create([
+            'user_id'     => Auth::id(),
+            'action'      => 'modification',
+            'module'      => 'presences',
+            'description' => 'Présence modifiée pour l’employé ID '
+                . $presence->employe_id
+                . ' le '
+                . \Illuminate\Support\Carbon::parse($presence->date)->format('d/m/Y')
+                . '.',
+            'type_cible'  => 'presence',
+            'cible_id'    => $presence->id,
+            'ancienne_valeur' => $anciennesValeurs,
+            'nouvelle_valeur' => $presence->only([
+                'employe_id',
+                'date',
+                'heure_entree',
+                'heure_sortie',
+                'statut',
+                'retard_minutes',
+                'heures_travaillees',
+                'commentaire',
+            ]),
+            'adresse_ip' => $request->ip(),
+            'user_agent' => $request->userAgent(),
+        ]);
+
+        // Notifier uniquement lorsque le statut devient absent ou retard.
+        if (
+            $ancienStatut !== $presence->statut
+            && in_array($presence->statut, ['absent', 'retard'], true)
+        ) {
+            $employe = Employe::with('user')->find($presence->employe_id);
+        
+            if ($employe?->user) {
+                $date = \Illuminate\Support\Carbon::parse($presence->date)->format('d/m/Y');
+        
+                $message = $presence->statut === 'absent'
+                    ? 'Votre présence du ' . $date . ' a été modifiée : vous êtes marqué absent.'
+                    : 'Votre présence du ' . $date . ' a été modifiée : retard de '
+                        . ($presence->retard_minutes ?? 0) . ' minute(s).';
+        
+                app(NotificationService::class)->envoyer(
+                    $employe->user,
+                    $presence->statut === 'absent'
+                        ? 'Présence modifiée : absence'
+                        : 'Présence modifiée : retard',
+                    $message,
+                    'warning',
+                    null,
+                    'presence'
+                );
+            }
+        }
+
         return redirect()
             ->route('gestion.presences.index')
             ->with('success', 'Présence modifiée avec succès.');
     }
-
+    
     /**
      * Supprimer une présence.
      */
     public function destroy(string $id)
     {
         $presence = Presence::findOrFail($id);
+
+        // Enregistrer la suppression dans l'historique avant de supprimer.
+        HistoriqueAction::create([
+            'user_id'     => Auth::id(),
+            'action'      => 'suppression',
+            'module'      => 'presences',
+            'description' => 'Présence supprimée pour l’employé ID '
+                . $presence->employe_id
+                . ' le '
+                . \Illuminate\Support\Carbon::parse($presence->date)->format('d/m/Y')
+                . '.',
+            'type_cible'  => 'presence',
+            'cible_id'    => $presence->id,
+            'ancienne_valeur' => $presence->only([
+                'id',
+                'employe_id',
+                'date',
+                'heure_entree',
+                'heure_sortie',
+                'statut',
+                'retard_minutes',
+                'heures_travaillees',
+                'commentaire',
+            ]),
+            'adresse_ip' => request()->ip(),
+            'user_agent' => request()->userAgent(),
+        ]);
+
         $presence->delete();
 
         return redirect()

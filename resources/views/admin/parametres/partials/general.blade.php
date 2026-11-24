@@ -175,8 +175,8 @@
                     >
                         @foreach ([
                             'fr' => 'Français',
-                            'mg' => 'Malagasy',
-                            'en' => 'Anglais',
+                            // 'mg' => 'Malagasy',
+                            // 'en' => 'Anglais',
                         ] as $valeur => $libelle)
                             <option
                                 value="{{ $valeur }}"

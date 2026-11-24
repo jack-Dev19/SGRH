@@ -36,6 +36,7 @@ class NotificationService
             'paie' => true,
             'performance' => true,
             'recrutement' => true,
+            'contrats' => true,
         ]);
 
         return (bool) ($modules[$module] ?? false);

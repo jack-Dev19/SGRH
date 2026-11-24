@@ -68,9 +68,10 @@ class ParametreController extends Controller
                 'conges'       => true,
                 'absences'     => true,
                 'presence'     => true,
-                'paie'        => true,
+                'paie'         => true,
                 'performance'  => true,
                 'recrutement'  => true,
+                'contrats'     => true,
             ]
         );
 
@@ -122,6 +123,7 @@ class ParametreController extends Controller
                 'paie',
                 'performance',
                 'recrutement',
+                'contrats',
             ];
     
             $modulesEnvoyes = $request->input('notifications.modules', []);

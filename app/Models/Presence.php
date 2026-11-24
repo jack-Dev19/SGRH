@@ -23,6 +23,8 @@ class Presence extends Model
         'statut',
         'source',
         'commentaire',
+        'est_anomalie',
+        'description_anomalie',
     ];
 
     protected function casts(): array

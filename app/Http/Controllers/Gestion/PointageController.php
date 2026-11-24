@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Gestion;
 use App\Http\Controllers\Controller;
 use App\Models\Employe;
 use App\Models\Pointage;
+use App\Models\Presence;
+use Illuminate\Pagination\LengthAwarePaginator;
 use App\Services\PointageService;
 use App\Services\NotificationService;
 use Illuminate\Http\Request;
@@ -226,37 +228,135 @@ class PointageController extends Controller
             'updated_at' => now()->format('H:i:s'),
         ]);
     }
-
+    
     public function historique(Request $request): View
     {
-        $query = Pointage::with('employe');
-        $date  = $request->input('date', now()->toDateString());
-        $query->whereDate('date_heure', $date);
+        $date = $request->input('date', now()->toDateString());
+        $employeId = $request->input('employe_id');
+        $type = $request->input('type');
+        $anomaliesSeulement = $request->boolean('anomalies');
 
-        if ($employeId = $request->input('employe_id')) {
-            $query->where('employe_id', $employeId);
+        /*
+        |--------------------------------------------------------------------------
+        | 1. Récupérer les pointages QR
+        |--------------------------------------------------------------------------
+        */
+        $pointagesQr = Pointage::with('employe')
+            ->whereDate('date_heure', $date)
+            ->when($employeId, fn ($q) => $q->where('employe_id', $employeId))
+            ->when($type, fn ($q) => $q->where('type', $type))
+            ->when($anomaliesSeulement, fn ($q) => $q->where('est_anomalie', true))
+            ->get()
+            ->map(function ($p) {
+                $p->source_historique = 'qr';
+                return $p;
+            });
+
+        /*
+        |--------------------------------------------------------------------------
+        | 2. Récupérer les présences manuelles
+        |--------------------------------------------------------------------------
+        */
+        $presences = Presence::with('employe')
+            ->whereDate('date', $date)
+            ->when($employeId, fn ($q) => $q->where('employe_id', $employeId))
+            ->when($anomaliesSeulement, fn ($q) => $q->where('est_anomalie', true))
+            ->get();
+
+        $pointagesManuels = collect();
+
+        foreach ($presences as $presence) {
+            foreach ([
+                'entree' => $presence->heure_entree,
+                'sortie' => $presence->heure_sortie,
+            ] as $typeManuel => $heure) {
+
+                if (!$heure || ($type && $type !== $typeManuel)) {
+                    continue;
+                }
+
+                $pointagesManuels->push((object) [
+                    'id' => $presence->id,
+                    'employe_id' => $presence->employe_id,
+                    'employe' => $presence->employe,
+                    'date_heure' => Carbon::parse(
+                        $presence->date->format('Y-m-d') . ' ' . $heure
+                    ),
+                    'type' => $typeManuel,
+                    'type_scan' => 'manuel',
+                    'est_anomalie' => (bool) $presence->est_anomalie,
+                    'description_anomalie' => $presence->description_anomalie,
+                    'source_historique' => 'manuel',
+                ]);
+            }
         }
 
-        if ($type = $request->input('type')) {
-            $query->where('type', $type);
-        }
+        /*
+        |--------------------------------------------------------------------------
+        | 3. Fusionner les deux sources et trier par heure
+        |--------------------------------------------------------------------------
+        */
+        $tousLesPointages = $pointagesQr
+            ->concat($pointagesManuels)
+            ->sortByDesc('date_heure')
+            ->values();
 
-        if ($request->boolean('anomalies')) {
-            $query->where('est_anomalie', true);
-        }
+        /*
+        |--------------------------------------------------------------------------
+        | 4. Pagination commune
+        |--------------------------------------------------------------------------
+        */
+        $parPage = 20;
+        $page = LengthAwarePaginator::resolveCurrentPage();
 
-        $pointages = $query->orderByDesc('date_heure')->paginate(20)->withQueryString();
+        $pointages = new LengthAwarePaginator(
+            $tousLesPointages->forPage($page, $parPage)->values(),
+            $tousLesPointages->count(),
+            $parPage,
+            $page,
+            [
+                'path' => LengthAwarePaginator::resolveCurrentPath(),
+                'query' => $request->query(),
+            ]
+        );
+
+        /*
+        |--------------------------------------------------------------------------
+        | 5. Statistiques QR + manuel
+        |--------------------------------------------------------------------------
+        */
+        $tousDuJour = Pointage::whereDate('date_heure', $date)->get();
+
+        $presencesDuJour = Presence::whereDate('date', $date)->get();
 
         $stats = [
-            'total'     => Pointage::whereDate('date_heure', $date)->count(),
-            'arrivees'  => Pointage::whereDate('date_heure', $date)->where('type', 'entree')->count(),
-            'departs'   => Pointage::whereDate('date_heure', $date)->where('type', 'sortie')->count(),
-            'anomalies' => Pointage::whereDate('date_heure', $date)->where('est_anomalie', true)->count(),
+            'total' => $tousDuJour->count()
+                + $presencesDuJour->sum(function ($p) {
+                    return (int) !empty($p->heure_entree)
+                        + (int) !empty($p->heure_sortie);
+                }),
+
+            'arrivees' => $tousDuJour->where('type', 'entree')->count()
+                + $presencesDuJour->filter(fn ($p) => !empty($p->heure_entree))->count(),
+
+            'departs' => $tousDuJour->where('type', 'sortie')->count()
+                + $presencesDuJour->filter(fn ($p) => !empty($p->heure_sortie))->count(),
+
+            'anomalies' => $tousDuJour->where('est_anomalie', true)->count()
+                + $presencesDuJour->where('est_anomalie', true)->sum(function ($p) {
+                    return (int) !empty($p->heure_entree)
+                        + (int) !empty($p->heure_sortie);
+                }),
         ];
 
         $employes = Employe::orderBy('nom')->get();
 
-        return view('gestion.pointage.historique', compact('pointages', 'stats', 'employes', 'date'));
+        return view('gestion.pointage.historique', compact(
+            'pointages',
+            'stats',
+            'employes',
+            'date'
+        ));
     }
 
     public function corriger(string $id): View

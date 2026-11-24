@@ -142,16 +142,37 @@ class FichePaieService
 
         return "fiche-paie-{$periode}-{$contrat->numero}-{$nomEmploye}.pdf";
     }
-
+    
     /**
-     * Calculer les éléments de paie.
-     *
-     * Tous les calculs sont réalisés en MGA.
+     * Exposer les calculs de paie pour la création des bulletins.
      */
-    protected function calculerPaie(
+    public function calculerPourBulletin(
         Contrat $contrat,
         int $mois,
         int $annee
+    ): array {
+        $contrat->load(['employe.departement', 'employe.poste']);
+
+        $dateReference = Carbon::create($annee, $mois, 1)->endOfMonth();
+
+        $donnees = $this->calculerPaie(
+            $contrat,
+            $mois,
+            $annee,
+            $dateReference
+        );
+
+        return array_merge($donnees, [
+            'contrat' => $contrat,
+            'employe' => $contrat->employe,
+        ]);
+    }
+
+    protected function calculerPaie(
+        Contrat $contrat,
+        int $mois,
+        int $annee,
+        ?Carbon $dateReference = null
     ): array {
         // Convertir le salaire du contrat en Ariary (MGA).
         $conversionService = app(ConversionDeviseService::class);
@@ -182,7 +203,7 @@ class FichePaieService
         // pas automatiquement une prime d'ancienneté.
         $ancienneteAnnees = $estStage
             ? 0
-            : $this->getAncienneteAnnees($contrat);
+            : $this->getAncienneteAnnees($contrat, $dateReference);
         
         $tauxAnciennete = $estStage
             ? 0
@@ -314,19 +335,23 @@ class FichePaieService
      * Calculer l'ancienneté de l'employé.
      */
     protected function getAncienneteAnnees(
-        Contrat $contrat
+        Contrat $contrat,
+        ?Carbon $dateReference = null
     ): int {
         if (!$contrat->date_debut) {
             return 0;
         }
-
+    
         try {
-            return Carbon::parse($contrat->date_debut)->diffInYears(now());
+            $dateReference = $dateReference ?? now();
+    
+            return Carbon::parse($contrat->date_debut)
+                ->diffInYears($dateReference);
         } catch (\Throwable $e) {
             Log::warning(
                 "[FichePaie] Erreur calcul ancienneté : " . $e->getMessage()
             );
-
+    
             return 0;
         }
     }

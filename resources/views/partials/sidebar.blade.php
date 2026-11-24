@@ -210,6 +210,16 @@
                 <span>Salaires</span>
             </a>
 
+            <a href="{{ route('gestion.bulletins-paie.index') }}"
+               class="sidebar-link {{ request()->routeIs('gestion.bulletins-paie.*') ? 'active' : '' }}">
+                <svg class="h-4 w-4 shrink-0" fill="none" stroke="currentColor"
+                     viewBox="0 0 24 24" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round"
+                          d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h6l5 5v11a2 2 0 01-2 2z"/>
+                </svg>
+                <span>Bulletins de paie</span>
+            </a>
+
             <a href="{{ route('gestion.evaluations.index') }}"
                class="sidebar-link {{ request()->routeIs('gestion.evaluations.*') ? 'active' : '' }}">
                 <svg class="h-4 w-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">

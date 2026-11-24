@@ -37,6 +37,7 @@ use App\Http\Controllers\Gestion\PresenceController;
 use App\Http\Controllers\Gestion\QrCodeController;
 use App\Http\Controllers\Gestion\SalaireController;
 use App\Http\Controllers\Gestion\UserController;
+use App\Http\Controllers\Gestion\BulletinPaieController;
 
 use App\Http\Controllers\PublicController;
 use App\Http\Controllers\Rh\DashboardController as RhDashboardController;
@@ -498,6 +499,24 @@ Route::middleware('auth')->group(function () {
 
             Route::post('absences/{absence}/refuser', [AbsenceController::class, 'refuser'])
                 ->name('absences.refuser');
+
+            // Gestion des bulletins de paie
+            Route::prefix('bulletins-paie')->name('bulletins-paie.')->group(function () {
+                Route::get('/', [BulletinPaieController::class, 'index'])
+                    ->name('index');
+            
+                Route::get('/creer', [BulletinPaieController::class, 'create'])
+                    ->name('create');
+            
+                Route::post('/', [BulletinPaieController::class, 'store'])
+                    ->name('store');
+            
+                Route::get('/{id}', [BulletinPaieController::class, 'show'])
+                    ->name('show');
+            
+                Route::post('/{id}/publier', [BulletinPaieController::class, 'publier'])
+                    ->name('publier');
+            });
 
         });
 

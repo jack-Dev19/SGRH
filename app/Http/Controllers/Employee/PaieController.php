@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Employe;
 use App\Models\BulletinPaie;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Str;
 use Barryvdh\DomPDF\Facade\Pdf;
 
 class PaieController extends Controller
@@ -19,6 +20,7 @@ class PaieController extends Controller
             ->firstOrFail();
 
         $bulletins = BulletinPaie::where('employe_id', $employe->id)
+            ->where('statut', 'publie')
             ->orderByDesc('annee')
             ->orderByDesc('periode')
             ->paginate(12);
@@ -38,15 +40,11 @@ class PaieController extends Controller
         // Vérifier que le bulletin appartient à l'employé connecté.
         $bulletin = BulletinPaie::where('id', $bulletin)
             ->where('employe_id', $employe->id)
+            ->where('statut', 'publie')
             ->with(['employe', 'lignes'])
             ->firstOrFail();
 
-        $mois = (int) $bulletin->periode;
-
-        $periodeLabel = \Carbon\Carbon::create()
-            ->month($mois)
-            ->locale('fr')
-            ->translatedFormat('F') . ' ' . $bulletin->annee;
+        $periodeLabel = $bulletin->periode . ' ' . $bulletin->annee;
 
         // Données du bulletin enregistré en base de données.
         $pdf = Pdf::loadView('employee.paie.pdf', [
@@ -59,7 +57,7 @@ class PaieController extends Controller
 
         $nomFichier = 'bulletin-paie-' .
             $bulletin->annee . '-' .
-            str_pad($bulletin->periode, 2, '0', STR_PAD_LEFT) .
+            Str::slug($bulletin->periode) .
             '.pdf';
 
         return $pdf->download($nomFichier);

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Gestion;
 use App\Http\Controllers\Controller;
 use App\Models\Employe;
 use App\Models\Salaire;
+use App\Services\NotificationService;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
@@ -62,7 +63,7 @@ class SalaireController extends Controller
     /**
      * Enregistrer un nouveau salaire.
      */
-    public function store(Request $request)
+    public function store(Request $request, NotificationService $notificationService)
     {
         $validated = $request->validate([
             'employe_id'   => ['required', 'exists:employes,id'],
@@ -74,7 +75,21 @@ class SalaireController extends Controller
             'commentaire'  => ['nullable', 'string', 'max:255'],
         ]);
 
-        Salaire::create($validated);
+        $salaire = Salaire::create($validated);
+
+        // Notifier l'employé de la création de son salaire
+        $salaire->load('employe.user');
+
+        if ($salaire->employe?->user) {
+            $notificationService->envoyer(
+                $salaire->employe->user,
+                'Nouveau salaire enregistré',
+                'Un nouveau salaire a été enregistré dans votre dossier. Consultez votre espace employé pour plus de détails.',
+                'info',
+                null,
+                'paie'
+            );
+        }
 
         return redirect()
             ->route('gestion.salaires.index')
@@ -105,8 +120,11 @@ class SalaireController extends Controller
     /**
      * Enregistrer les modifications.
      */
-    public function update(Request $request, string $id)
-    {
+    public function update(
+        Request $request,
+        NotificationService $notificationService,
+        string $id
+    ) {
         $salaire = Salaire::findOrFail($id);
 
         $validated = $request->validate([
@@ -120,6 +138,20 @@ class SalaireController extends Controller
         ]);
 
         $salaire->update($validated);
+
+        // Notifier l'employé de la modification de son salaire
+        $salaire->load('employe.user');
+        
+        if ($salaire->employe?->user) {
+            $notificationService->envoyer(
+                $salaire->employe->user,
+                'Salaire mis à jour',
+                'Les informations de votre salaire ont été modifiées. Consultez votre espace employé pour plus de détails.',
+                'info',
+                null,
+                'paie'
+            );
+        }
 
         return redirect()
             ->route('gestion.salaires.index')

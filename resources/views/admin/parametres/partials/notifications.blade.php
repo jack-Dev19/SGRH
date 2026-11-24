@@ -46,7 +46,7 @@
             </div>
 
             {{-- Application --}}
-            <div class="flex items-center justify-between gap-4 py-3 border-b border-slate-100">
+            <div class="flex items-center justify-between gap-4 py-3 border-slate-100">
 
                 <div>
                     <p class="text-sm font-medium text-slate-700">
@@ -69,7 +69,7 @@
             </div>
 
             {{-- E-mail --}}
-            <div class="flex items-center justify-between gap-4 py-3 border-b border-slate-100">
+            {{-- <div class="flex items-center justify-between gap-4 py-3 border-b border-slate-100">
 
                 <div>
                     <p class="text-sm font-medium text-slate-700">
@@ -89,10 +89,10 @@
                     class="w-4 h-4 rounded text-blue-600"
                 >
 
-            </div>
+            </div> --}}
 
             {{-- SMS --}}
-            <div class="flex items-center justify-between gap-4 py-3">
+            {{-- <div class="flex items-center justify-between gap-4 py-3">
 
                 <div>
                     <p class="text-sm font-medium text-slate-700">
@@ -112,7 +112,7 @@
                     class="w-4 h-4 rounded text-blue-600"
                 >
 
-            </div>
+            </div> --}}
 
         </div>
 
@@ -136,7 +136,8 @@
                     'presence'     => 'Présences',
                     'paie'         => 'Gestion de la paie',
                     'performance'  => 'Évaluations du personnel',
-                    'recrutement'  => 'Offres d’emploi',
+                    'contrats'     => 'Gestion des contrats',
+                    // 'recrutement'  => 'Offres d’emploi',
                 ];
             @endphp
 
