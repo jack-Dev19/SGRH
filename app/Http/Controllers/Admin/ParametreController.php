@@ -83,13 +83,55 @@ class ParametreController extends Controller
             ) ?? [];
         }
 
+        // Paramètres de sécurité
+        $securite = [
+            'tentatives_max' => (int) Parametre::obtenir(
+                'securite',
+                'tentatives_max',
+                5
+            ),
+        
+            'duree_verrouillage' => (int) Parametre::obtenir(
+                'securite',
+                'duree_verrouillage',
+                15
+            ),
+        
+            'longueur_min' => (int) Parametre::obtenir(
+                'securite',
+                'longueur_min',
+                8
+            ),
+        
+            'exiger_majuscule' => filter_var(
+                Parametre::obtenir('securite', 'exiger_majuscule', '1'),
+                FILTER_VALIDATE_BOOLEAN
+            ),
+        
+            'exiger_minuscule' => filter_var(
+                Parametre::obtenir('securite', 'exiger_minuscule', '1'),
+                FILTER_VALIDATE_BOOLEAN
+            ),
+        
+            'exiger_chiffre' => filter_var(
+                Parametre::obtenir('securite', 'exiger_chiffre', '1'),
+                FILTER_VALIDATE_BOOLEAN
+            ),
+        
+            'exiger_special' => filter_var(
+                Parametre::obtenir('securite', 'exiger_special', '1'),
+                FILTER_VALIDATE_BOOLEAN
+            ),
+        ];
+
         return view(
             'admin.parametres.index',
             compact(
                 'stats',
                 'parametresGeneraux',
                 'notificationsCanaux',
-                'notificationsModules'
+                'notificationsModules',
+                'securite'
             )
         );
     }
@@ -98,6 +140,77 @@ class ParametreController extends Controller
      */
     public function update(Request $request)
     {
+
+        // ==========================================================
+        // ENREGISTREMENT DES PARAMÈTRES DE SÉCURITÉ
+        // ==========================================================
+        if ($request->has('securite_form')) {
+
+            $donnees = $request->validate([
+                'tentatives_max' => [
+                    'required',
+                    'integer',
+                    'min:1',
+                    'max:20',
+                ],
+        
+                'duree_verrouillage' => [
+                    'required',
+                    'integer',
+                    'min:1',
+                    'max:1440',
+                ],
+        
+                'longueur_min' => [
+                    'required',
+                    'integer',
+                    'min:8',
+                    'max:64',
+                ],
+            ]);
+        
+            // Paramètres de verrouillage
+            Parametre::definir(
+                'securite',
+                'tentatives_max',
+                $donnees['tentatives_max']
+            );
+        
+            Parametre::definir(
+                'securite',
+                'duree_verrouillage',
+                $donnees['duree_verrouillage']
+            );
+        
+            // Longueur minimale du mot de passe
+            Parametre::definir(
+                'securite',
+                'longueur_min',
+                $donnees['longueur_min']
+            );
+        
+            // Règles de complexité
+            foreach ([
+                'exiger_majuscule',
+                'exiger_minuscule',
+                'exiger_chiffre',
+                'exiger_special',
+            ] as $regle) {
+                Parametre::definir(
+                    'securite',
+                    $regle,
+                    $request->boolean($regle) ? '1' : '0'
+                );
+            }
+        
+            return redirect()
+                ->route('admin.parametres.index')
+                ->with(
+                    'success',
+                    'Les paramètres de sécurité ont été enregistrés avec succès.'
+                );
+        }
+
         // ==========================================================
         // ENREGISTREMENT DES PARAMÈTRES NOTIFICATIONS
         // ==========================================================

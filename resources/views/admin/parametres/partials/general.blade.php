@@ -4,46 +4,48 @@
      Fichier : partials/general.blade.php
 ============================================================ --}}
 
-<section id="general" class="space-y-6">
+<section id="general" class="space-y-8">
 
-    {{-- Présentation --}}
+    {{-- PRÉSENTATION --}}
     <div>
-        <h2 class="text-lg font-semibold text-slate-800">
+        <h2 class="text-lg font-semibold text-gray-900">
             Paramètres généraux
         </h2>
 
-        <p class="text-sm text-slate-500 mt-1">
+        <p class="mt-1 text-sm text-gray-500">
             Gérez les informations de votre entreprise et les préférences
             générales de votre application.
         </p>
     </div>
 
-    {{-- Formulaire d'enregistrement --}}
+    {{-- FORMULAIRE D'ENREGISTREMENT --}}
     <form
-    action="{{ route('admin.parametres.update') }}"
-    method="POST"
-    enctype="multipart/form-data"
-    class="space-y-6"
+        action="{{ route('admin.parametres.update') }}"
+        method="POST"
+        enctype="multipart/form-data"
+        class="space-y-8"
     >
         @csrf
 
-        {{-- Informations de l'entreprise --}}
-        <div class="border border-slate-200 rounded-xl p-5 space-y-5">
+        {{-- INFORMATIONS DE L'ENTREPRISE --}}
+        <div class="rounded-2xl border border-gray-200 bg-white p-6 space-y-5">
 
             <div>
-                <h3 class="font-semibold text-slate-800">
+                <h3 class="text-base font-semibold text-gray-800">
                     Informations de l'entreprise
                 </h3>
 
-                <p class="text-xs text-slate-500 mt-1">
+                <p class="mt-1 text-sm text-gray-500">
                     Informations utilisées dans les différentes parties du SGRH.
                 </p>
             </div>
 
-            {{-- Nom de l'entreprise --}}
+            {{-- NOM DE L'ENTREPRISE --}}
             <div>
-                <label for="nom_entreprise"
-                       class="block text-sm font-medium text-slate-700 mb-1">
+                <label
+                    for="nom_entreprise"
+                    class="mb-2 block text-sm font-medium text-gray-700"
+                >
                     Nom de l'entreprise
                 </label>
 
@@ -54,83 +56,89 @@
                     value="{{ old('nom_entreprise', $parametresGeneraux['nom_entreprise'] ?? '') }}"
                     placeholder="Saisir le nom de l'entreprise"
                     required
-                    class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-blue-500"
+                    class="h-12 w-full rounded-xl border border-gray-300 px-4 text-base focus:border-indigo-500 focus:ring-indigo-500"
                 >
 
                 @error('nom_entreprise')
-                    <p class="text-sm text-red-600 mt-1">{{ $message }}</p>
+                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                 @enderror
             </div>
-            
-            {{-- Logo de l'entreprise --}}
+
+            {{-- LOGO DE L'ENTREPRISE --}}
             <div>
-                <label for="logo_entreprise"
-                       class="block text-sm font-medium text-slate-700 mb-1">
+                <label
+                    for="logo_entreprise"
+                    class="mb-2 block text-sm font-medium text-gray-700"
+                >
                     Logo de l'entreprise
                 </label>
-            
-                {{-- Aperçu du logo déjà enregistré --}}
-                <div class="mb-3">
+
+                {{-- APERÇU DU LOGO --}}
+                <div class="mb-4">
+
                     @if (!empty($parametresGeneraux['logo_entreprise']))
                         <img
                             id="logoPreview"
                             src="{{ asset('storage/' . $parametresGeneraux['logo_entreprise']) }}"
                             alt="Logo de l'entreprise"
-                            class="h-24 w-auto max-w-xs object-contain rounded-lg border border-slate-200 p-2"
+                            class="h-24 w-auto max-w-xs rounded-xl border border-gray-200 p-3 object-contain"
                         >
                     @else
                         <img
                             id="logoPreview"
                             src=""
                             alt="Aperçu du logo"
-                            class="hidden h-24 w-auto max-w-xs object-contain rounded-lg border border-slate-200 p-2"
+                            class="hidden h-24 w-auto max-w-xs rounded-xl border border-gray-200 p-3 object-contain"
                         >
-                        <p id="logoPlaceholder" class="text-xs text-slate-400">
+
+                        <p id="logoPlaceholder" class="text-sm text-gray-400">
                             Aucun logo enregistré pour le moment.
                         </p>
                     @endif
+
                 </div>
-            
-                {{-- Sélection d'un nouveau logo --}}
+
+                {{-- SÉLECTION D'UN NOUVEAU LOGO --}}
                 <input
                     type="file"
                     id="logo_entreprise"
                     name="logo_entreprise"
                     accept="image/png,image/jpeg,image/webp"
-                    class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                    class="block w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm text-gray-700 file:mr-4 file:rounded-lg file:border-0 file:bg-indigo-50 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-indigo-700 hover:file:bg-indigo-100"
                 >
-            
-                <p class="text-xs text-slate-400 mt-1">
+
+                <p class="mt-2 text-xs text-gray-500">
                     Formats acceptés : PNG, JPG et WEBP. Taille maximale : 2 Mo.
                 </p>
-            
+
                 @error('logo_entreprise')
-                    <p class="text-sm text-red-600 mt-1">{{ $message }}</p>
+                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                 @enderror
             </div>
 
-
         </div>
 
-        {{-- Préférences régionales --}}
-        <div class="border border-slate-200 rounded-xl p-5 space-y-5">
+        {{-- PRÉFÉRENCES RÉGIONALES --}}
+        <div class="rounded-2xl border border-gray-200 bg-white p-6 space-y-5">
 
             <div>
-                <h3 class="font-semibold text-slate-800">
+                <h3 class="text-base font-semibold text-gray-800">
                     Préférences régionales
                 </h3>
 
-                <p class="text-xs text-slate-500 mt-1">
+                <p class="mt-1 text-sm text-gray-500">
                     Définissez les formats utilisés dans l'application.
                 </p>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <div class="grid grid-cols-1 gap-5 md:grid-cols-2">
 
-                {{-- Fuseau horaire --}}
+                {{-- FUSEAU HORAIRE --}}
                 <div>
-                    <label for="fuseau_horaire"
-                           class="block text-sm font-medium text-slate-700 mb-1">
+                    <label
+                        for="fuseau_horaire"
+                        class="mb-2 block text-sm font-medium text-gray-700"
+                    >
                         Fuseau horaire
                     </label>
 
@@ -138,7 +146,7 @@
                         id="fuseau_horaire"
                         name="fuseau_horaire"
                         required
-                        class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                        class="h-12 w-full rounded-xl border border-gray-300 bg-white px-4 text-base focus:border-indigo-500 focus:ring-indigo-500"
                     >
                         @foreach ([
                             'Indian/Antananarivo' => 'Madagascar (UTC+3)',
@@ -156,14 +164,16 @@
                     </select>
 
                     @error('fuseau_horaire')
-                        <p class="text-sm text-red-600 mt-1">{{ $message }}</p>
+                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                     @enderror
                 </div>
 
-                {{-- Langue --}}
+                {{-- LANGUE --}}
                 <div>
-                    <label for="langue"
-                           class="block text-sm font-medium text-slate-700 mb-1">
+                    <label
+                        for="langue"
+                        class="mb-2 block text-sm font-medium text-gray-700"
+                    >
                         Langue
                     </label>
 
@@ -171,7 +181,7 @@
                         id="langue"
                         name="langue"
                         required
-                        class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                        class="h-12 w-full rounded-xl border border-gray-300 bg-white px-4 text-base focus:border-indigo-500 focus:ring-indigo-500"
                     >
                         @foreach ([
                             'fr' => 'Français',
@@ -188,14 +198,16 @@
                     </select>
 
                     @error('langue')
-                        <p class="text-sm text-red-600 mt-1">{{ $message }}</p>
+                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                     @enderror
                 </div>
 
-                {{-- Devise --}}
+                {{-- DEVISE --}}
                 <div>
-                    <label for="devise"
-                           class="block text-sm font-medium text-slate-700 mb-1">
+                    <label
+                        for="devise"
+                        class="mb-2 block text-sm font-medium text-gray-700"
+                    >
                         Devise
                     </label>
 
@@ -203,7 +215,7 @@
                         id="devise"
                         name="devise"
                         required
-                        class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                        class="h-12 w-full rounded-xl border border-gray-300 bg-white px-4 text-base focus:border-indigo-500 focus:ring-indigo-500"
                     >
                         @foreach ([
                             'MGA' => 'Ariary (MGA)',
@@ -220,14 +232,16 @@
                     </select>
 
                     @error('devise')
-                        <p class="text-sm text-red-600 mt-1">{{ $message }}</p>
+                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                     @enderror
                 </div>
 
-                {{-- Format de date --}}
+                {{-- FORMAT DE DATE --}}
                 <div>
-                    <label for="format_date"
-                           class="block text-sm font-medium text-slate-700 mb-1">
+                    <label
+                        for="format_date"
+                        class="mb-2 block text-sm font-medium text-gray-700"
+                    >
                         Format de date
                     </label>
 
@@ -235,7 +249,7 @@
                         id="format_date"
                         name="format_date"
                         required
-                        class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                        class="h-12 w-full rounded-xl border border-gray-300 bg-white px-4 text-base focus:border-indigo-500 focus:ring-indigo-500"
                     >
                         @foreach ([
                             'd/m/Y' => 'JJ/MM/AAAA',
@@ -252,40 +266,43 @@
                     </select>
 
                     @error('format_date')
-                        <p class="text-sm text-red-600 mt-1">{{ $message }}</p>
+                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                     @enderror
                 </div>
 
             </div>
         </div>
 
-        {{-- Bouton temporaire du formulaire Général --}}
-        <div class="flex justify-end">
+        {{-- ENREGISTREMENT --}}
+        <div class="flex justify-end border-t border-gray-200 pt-5">
             <button
                 type="submit"
-                class="px-5 py-2.5 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition"
+                class="rounded-xl bg-indigo-600 px-6 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
             >
                 Enregistrer les paramètres généraux
             </button>
         </div>
 
     </form>
+
+    {{-- PRÉVISUALISATION DU NOUVEAU LOGO --}}
     <script>
         // Prévisualiser le nouveau logo avant son enregistrement
         document.getElementById('logo_entreprise')?.addEventListener('change', function (event) {
             const fichier = event.target.files[0];
-        
+
             if (!fichier) return;
-        
+
             const apercu = document.getElementById('logoPreview');
             const placeholder = document.getElementById('logoPlaceholder');
-        
+
             apercu.src = URL.createObjectURL(fichier);
             apercu.classList.remove('hidden');
-        
+
             if (placeholder) {
                 placeholder.classList.add('hidden');
             }
         });
     </script>
+
 </section>

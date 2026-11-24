@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Employe;
 use App\Models\Role;
 use App\Models\User;
+use App\Models\Parametre;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -15,6 +16,46 @@ use Illuminate\View\View;
 
 class UserController extends Controller
 {
+
+    /**
+     * Récupérer les règles configurées pour les mots de passe.
+     */
+    private function reglesMotDePasse(bool $obligatoire = true): array
+    {
+        $longueurMin = max(
+            8,
+            min(64, (int) Parametre::obtenir('securite', 'longueur_min', 8))
+        );
+
+        $regles = [
+            $obligatoire ? 'required' : 'nullable',
+            'string',
+            'min:' . $longueurMin,
+        ];
+
+        $reglesConfigurees = [
+            'exiger_majuscule' => '/[A-Z]/',
+            'exiger_minuscule' => '/[a-z]/',
+            'exiger_chiffre'   => '/[0-9]/',
+            'exiger_special'   => '/[^A-Za-z0-9]/',
+        ];
+
+        foreach ($reglesConfigurees as $cle => $expression) {
+            $activee = filter_var(
+                Parametre::obtenir('securite', $cle, '1'),
+                FILTER_VALIDATE_BOOLEAN
+            );
+
+            if ($activee) {
+                $regles[] = 'regex:' . $expression;
+            }
+        }
+
+        $regles[] = 'confirmed';
+
+        return $regles;
+    }
+
     // =================================================================
     // INDEX
     // =================================================================
@@ -84,7 +125,7 @@ class UserController extends Controller
         $validated = $request->validate([
             'name'      => ['required', 'string', 'max:150'],
             'email'     => ['required', 'email', 'unique:users,email'],
-            'password'  => ['required', 'string', 'min:8', 'confirmed'],
+            'password'  => $this->reglesMotDePasse(true),
             'role_id'   => ['required', 'exists:roles,id'],
             'matricule' => ['nullable', 'string', 'exists:employes,matricule'],
             'statut'    => ['nullable', 'boolean'],
@@ -94,7 +135,8 @@ class UserController extends Controller
             'email.email'        => 'L\'email doit être valide.',
             'email.unique'       => 'Cet email est déjà utilisé.',
             'password.required'  => 'Le mot de passe est obligatoire.',
-            'password.min'       => 'Le mot de passe doit contenir au moins 8 caractères.',
+            'password.min'       => 'Le mot de passe ne respecte pas la longueur minimale configurée.',
+            'password.regex'      => 'Le mot de passe ne respecte pas les exigences de sécurité configurées.',
             'password.confirmed' => 'Les mots de passe ne correspondent pas.',
             'role_id.required'   => 'Veuillez sélectionner un rôle.',
         ]);
@@ -223,10 +265,14 @@ class UserController extends Controller
         $validated = $request->validate([
             'name'      => ['required', 'string', 'max:150'],
             'email'     => ['required', 'email', 'unique:users,email,' . $user->id],
-            'password'  => ['nullable', 'string', 'min:8', 'confirmed'],
+            'password'  => $this->reglesMotDePasse(false),
             'role_id'   => ['required', 'exists:roles,id'],
             'matricule' => ['nullable', 'string', 'exists:employes,matricule'],
             'statut'    => ['nullable', 'boolean'],
+        ], [
+            'password.min'       => 'Le mot de passe ne respecte pas la longueur minimale configurée.',
+            'password.regex'     => 'Le mot de passe ne respecte pas les exigences de sécurité configurées.',
+            'password.confirmed' => 'Les mots de passe ne correspondent pas.',
         ]);
 
         $role = Role::findOrFail($validated['role_id']);

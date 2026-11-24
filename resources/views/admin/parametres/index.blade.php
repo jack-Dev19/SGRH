@@ -172,9 +172,14 @@
                     @include('admin.parametres.partials.notifications')
                 </div>
 
+                {{-- Contenu Sécurité --}}
+                <div x-show="activeTab === 'securite'" x-cloak>
+                    @include('admin.parametres.partials.securite')
+                </div>
+
                 {{-- Contenus à développer --}}
                 <div
-                    x-show="!['general', 'notifications'].includes(activeTab)"
+                    x-show="!['general', 'notifications', 'securite'].includes(activeTab)"
                     x-cloak
                     class="py-10 text-center"
                 >

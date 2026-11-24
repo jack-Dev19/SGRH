@@ -1,130 +1,101 @@
 {{-- ============================================================
      SECTION : PARAMÈTRES DES NOTIFICATIONS
-     Fichier : partials/notifications.blade.php
 ============================================================ --}}
 
-<section id="notifications" class="space-y-6">
+<section id="notifications" class="space-y-8">
 
-    {{-- Présentation --}}
+    {{-- EN-TÊTE --}}
     <div>
-        <h2 class="text-lg font-semibold text-slate-800">
+        <h2 class="text-lg font-semibold text-gray-900">
             Notifications
         </h2>
-
-        <p class="text-sm text-slate-500 mt-1">
-            Configurez les canaux de notification et les alertes
-            envoyées aux utilisateurs.
+        <p class="mt-1 text-sm text-gray-500">
+            Configurez les canaux de notification et les alertes envoyées aux utilisateurs.
         </p>
     </div>
 
-    {{-- Formulaire indépendant des paramètres Notifications --}}
     <form
         action="{{ route('admin.parametres.update') }}"
         method="POST"
-        class="space-y-6"
+        class="space-y-8"
     >
         @csrf
 
-        {{-- Identifiant utilisé par le contrôleur pour reconnaître ce formulaire --}}
-        <input
-            type="hidden"
-            name="notifications_form"
-            value="1"
-        >
+        <input type="hidden" name="notifications_form" value="1">
 
-        {{-- Canaux de notification --}}
-        <div class="border border-slate-200 rounded-xl p-5 space-y-5">
+        {{-- SECTION 1 : CANAUX --}}
+        <div class="rounded-2xl border border-gray-200 bg-white p-6 space-y-5">
 
             <div>
-                <h3 class="font-semibold text-slate-800">
+                <h3 class="text-base font-semibold text-gray-800">
                     Canaux de notification
                 </h3>
-
-                <p class="text-xs text-slate-500 mt-1">
+                <p class="mt-1 text-sm text-gray-500">
                     Choisissez les moyens de communication disponibles.
                 </p>
             </div>
 
-            {{-- Application --}}
-            <div class="flex items-center justify-between gap-4 py-3 border-slate-100">
-
-                <div>
-                    <p class="text-sm font-medium text-slate-700">
+            {{-- APPLICATION --}}
+            <label class="flex items-center justify-between gap-4 rounded-xl border border-gray-200 p-4 cursor-pointer hover:bg-gray-50 transition">
+                <span>
+                    <span class="block text-sm font-medium text-gray-800">
                         Notifications dans l'application
-                    </p>
-
-                    <p class="text-xs text-slate-500">
+                    </span>
+                    <span class="block mt-1 text-xs text-gray-500">
                         Alertes affichées directement dans le SGRH.
-                    </p>
-                </div>
+                    </span>
+                </span>
 
                 <input
                     type="checkbox"
                     name="notifications[application]"
                     value="1"
                     @checked($notificationsCanaux['application'] ?? true)
-                    class="w-4 h-4 rounded text-blue-600"
+                    class="h-5 w-5 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
                 >
+            </label>
 
-            </div>
-
-            {{-- E-mail --}}
-            {{-- <div class="flex items-center justify-between gap-4 py-3 border-b border-slate-100">
-
-                <div>
-                    <p class="text-sm font-medium text-slate-700">
+            {{-- E-MAIL ET SMS CONSERVÉS DÉSACTIVÉS --}}
+            {{--
+            <label class="flex items-center justify-between gap-4 rounded-xl border border-gray-200 p-4">
+                <span>
+                    <span class="block text-sm font-medium text-gray-800">
                         Notifications par e-mail
-                    </p>
-
-                    <p class="text-xs text-slate-500">
+                    </span>
+                    <span class="block mt-1 text-xs text-gray-500">
                         Envoi de messages par courrier électronique.
-                    </p>
-                </div>
-
-                <input
-                    type="checkbox"
-                    name="notifications[email]"
-                    value="1"
+                    </span>
+                </span>
+                <input type="checkbox" name="notifications[email]" value="1"
                     @checked($notificationsCanaux['email'] ?? false)
-                    class="w-4 h-4 rounded text-blue-600"
-                >
+                    class="h-5 w-5 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
+            </label>
 
-            </div> --}}
-
-            {{-- SMS --}}
-            {{-- <div class="flex items-center justify-between gap-4 py-3">
-
-                <div>
-                    <p class="text-sm font-medium text-slate-700">
+            <label class="flex items-center justify-between gap-4 rounded-xl border border-gray-200 p-4">
+                <span>
+                    <span class="block text-sm font-medium text-gray-800">
                         Notifications par SMS
-                    </p>
-
-                    <p class="text-xs text-slate-500">
+                    </span>
+                    <span class="block mt-1 text-xs text-gray-500">
                         Envoi d'alertes par téléphone via un fournisseur SMS.
-                    </p>
-                </div>
-
-                <input
-                    type="checkbox"
-                    name="notifications[sms]"
-                    value="1"
+                    </span>
+                </span>
+                <input type="checkbox" name="notifications[sms]" value="1"
                     @checked($notificationsCanaux['sms'] ?? false)
-                    class="w-4 h-4 rounded text-blue-600"
-                >
-
-            </div> --}}
+                    class="h-5 w-5 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
+            </label>
+            --}}
 
         </div>
 
-        {{-- Notifications par module --}}
-        <div class="border border-slate-200 rounded-xl p-5 space-y-5">
+        {{-- SECTION 2 : MODULES --}}
+        <div class="rounded-2xl border border-gray-200 bg-white p-6 space-y-5">
 
             <div>
-                <h3 class="font-semibold text-slate-800">
+                <h3 class="text-base font-semibold text-gray-800">
                     Notifications par module
                 </h3>
-
-                <p class="text-xs text-slate-500 mt-1">
+                <p class="mt-1 text-sm text-gray-500">
                     Activez les alertes pour les événements importants.
                 </p>
             </div>
@@ -137,56 +108,53 @@
                     'paie'         => 'Gestion de la paie',
                     'performance'  => 'Évaluations du personnel',
                     'contrats'     => 'Gestion des contrats',
-                    // 'recrutement'  => 'Offres d’emploi',
                 ];
             @endphp
 
-            @foreach ($modulesNotifications as $cle => $libelle)
+            <div class="space-y-3">
 
-                <div class="flex items-center justify-between gap-4 py-3 border-b border-slate-100 last:border-0">
+                @foreach ($modulesNotifications as $cle => $libelle)
 
                     <label
                         for="notification_{{ $cle }}"
-                        class="text-sm font-medium text-slate-700"
+                        class="flex items-center justify-between gap-4 rounded-xl border border-gray-200 p-4 cursor-pointer hover:bg-gray-50 transition"
                     >
-                        {{ $libelle }}
+                        <span class="text-sm font-medium text-gray-800">
+                            {{ $libelle }}
+                        </span>
+
+                        <input
+                            type="checkbox"
+                            id="notification_{{ $cle }}"
+                            name="notifications[modules][{{ $cle }}]"
+                            value="1"
+                            @checked($notificationsModules[$cle] ?? true)
+                            class="h-5 w-5 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                        >
                     </label>
 
-                    <input
-                        type="checkbox"
-                        id="notification_{{ $cle }}"
-                        name="notifications[modules][{{ $cle }}]"
-                        value="1"
-                        @checked($notificationsModules[$cle] ?? true)
-                        class="w-4 h-4 rounded text-blue-600"
-                    >
+                @endforeach
 
-                </div>
-
-            @endforeach
-
+            </div>
         </div>
 
-        {{-- Information technique --}}
-        <div class="bg-blue-50 border border-blue-100 rounded-lg p-4">
-
-            <p class="text-sm font-medium text-blue-800">
+        {{-- INFORMATION --}}
+        <div class="rounded-xl border border-indigo-100 bg-indigo-50 p-5">
+            <p class="text-sm font-semibold text-indigo-900">
                 Information
             </p>
-
-            <p class="text-xs text-blue-700 mt-1">
-                Les notifications internes utilisent la table notifications
-                existante. L'envoi des e-mails et des SMS nécessitera
-                la configuration et la vérification de leurs services respectifs.
+            <p class="mt-1 text-sm text-indigo-800">
+                Les notifications internes utilisent la table notifications existante.
+                L'envoi des e-mails et des SMS nécessitera la configuration
+                de leurs services respectifs.
             </p>
-
         </div>
 
-        {{-- Bouton d'enregistrement --}}
-        <div class="flex justify-end">
+        {{-- ENREGISTREMENT --}}
+        <div class="flex justify-end border-t border-gray-200 pt-5">
             <button
                 type="submit"
-                class="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition"
+                class="rounded-xl bg-indigo-600 px-6 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
             >
                 Enregistrer les notifications
             </button>
