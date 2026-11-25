@@ -179,7 +179,7 @@
                         <th class="px-6 py-3 text-left">Type</th>
                         <th class="px-6 py-3 text-left">Période</th>
                         <th class="px-6 py-3 text-left">Durée</th>
-                        <th class="px-6 py-3 text-left">Actions</th>
+                        {{-- <th class="px-6 py-3 text-left">Actions</th> --}}
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-100">
@@ -206,7 +206,7 @@
                             <td class="px-6 py-3 text-slate-700">
                                 {{ $conge->nombre_jours }} jour(s)
                             </td>
-                            <td class="px-6 py-3">
+                            {{-- <td class="px-6 py-3">
                                 <div class="flex gap-2">
                                     <button class="text-xs font-medium px-3 py-1 rounded-full bg-blue-50 text-blue-700 hover:bg-blue-100 transition">
                                         ✓ Approuver
@@ -215,7 +215,7 @@
                                         ✕ Refuser
                                     </button>
                                 </div>
-                            </td>
+                            </td> --}}
                         </tr>
                     @empty
                         <tr>

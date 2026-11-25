@@ -219,8 +219,8 @@
                     >
                         @foreach ([
                             'MGA' => 'Ariary (MGA)',
-                            'EUR' => 'Euro (EUR)',
-                            'USD' => 'Dollar américain (USD)',
+                            // 'EUR' => 'Euro (EUR)',
+                            // 'USD' => 'Dollar américain (USD)',
                         ] as $valeur => $libelle)
                             <option
                                 value="{{ $valeur }}"

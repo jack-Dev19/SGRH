@@ -199,7 +199,7 @@
                                 <select name="devise" required
                                     class="w-full px-4 py-3.5 bg-white border-2 border-purple-200 text-purple-900 text-sm rounded-full font-bold text-center focus:ring-4 focus:ring-purple-500/20 focus:border-purple-500 transition-all outline-none">
 
-                                    @foreach (['MGA', 'EUR', 'USD'] as $code)
+                                    @foreach (['MGA'] as $code)
                                         <option value="{{ $code }}" {{ old('devise', $devise) == $code ? 'selected' : '' }}>
                                             {{ $code }}
                                         </option>

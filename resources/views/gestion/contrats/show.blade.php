@@ -101,13 +101,13 @@
                     </a>
 
                     {{-- Fiche de paie --}}
-                    @if(Route::has('gestion.contrats.fiche-paie'))
+                    {{-- @if(Route::has('gestion.contrats.fiche-paie'))
                         <a href="{{ route('gestion.contrats.fiche-paie', $contrat->id) }}"
                             class="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold px-4 py-2.5 rounded-full transition shadow-md shadow-emerald-500/20">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 7h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
                             Fiche de paie (mois en cours)
                         </a>
-                    @endif
+                    @endif --}}
 
                     {{-- Dossier personnel --}}
                     @if($contrat->employe_id && Route::has('gestion.employes.documents.index'))

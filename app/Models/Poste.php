@@ -57,15 +57,19 @@ class Poste extends Model
      */
     public function scopeActifs($query)
     {
-        return $query->where('statut', 'actif');
+        return $query->whereIn('statut', ['actif', '1']);
     }
-
+    
     /**
      * Vérifier si le poste est actif.
      */
     public function isActif(): bool
     {
-        return strtolower(trim((string) $this->statut)) === 'actif';
+        return in_array(
+            strtolower(trim((string) $this->statut)),
+            ['actif', '1'],
+            true
+        );
     }
 
     /**

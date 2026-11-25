@@ -208,15 +208,45 @@
                     </div>
                 </div>
 
-                {{-- Avatar --}}
+                
+                <div class="relative px-4 pb-4 flex-1 flex flex-col">
+                    
+                    
+                {{-- Avatar avec prise en charge des images externes et locales --}}
                 <div class="relative px-4 pb-4 flex-1 flex flex-col">
                     <div class="flex justify-center -mt-10 mb-3">
-                        <div class="w-20 h-20 rounded-full bg-white p-1 shadow-lg ring-1 ring-slate-100">
-                            <div class="w-full h-full rounded-full bg-gradient-to-br {{ $c['gradient'] }} flex items-center justify-center text-white font-bold text-xl">
-                                {{ $emp->initiales }}
-                            </div>
+                        <div class="w-20 h-20 rounded-full bg-white p-1 shadow-lg ring-1 ring-slate-100 overflow-hidden">
+                        
+                            @if($emp->photo)
+                        
+                                @php
+                                    $photoUrl = filter_var($emp->photo, FILTER_VALIDATE_URL)
+                                        ? $emp->photo
+                                        : \Illuminate\Support\Facades\Storage::disk('public')->url($emp->photo);
+                                @endphp
+                
+                                <img
+                                    src="{{ $photoUrl }}"
+                                    alt="Photo de {{ $emp->nom_complet }}"
+                                    class="w-full h-full rounded-full object-cover object-center"
+                                    onerror="this.style.display='none'; this.nextElementSibling.classList.remove('hidden');"
+                                >
+                        
+                                <div class="hidden w-full h-full rounded-full bg-gradient-to-br {{ $c['gradient'] }} flex items-center justify-center text-white font-bold text-xl">
+                                    {{ $emp->initiales }}
+                                </div>
+                            
+                            @else
+                            
+                                <div class="w-full h-full rounded-full bg-gradient-to-br {{ $c['gradient'] }} flex items-center justify-center text-white font-bold text-xl">
+                                    {{ $emp->initiales }}
+                                </div>
+                            
+                            @endif
+                            
                         </div>
                     </div>
+                </div>
 
                     {{-- Nom + matricule --}}
                     <div class="text-center mb-3">

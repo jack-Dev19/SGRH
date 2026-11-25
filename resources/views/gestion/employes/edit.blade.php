@@ -1,73 +1,175 @@
+
 @extends('layouts.dashboard')
 
 @section('title', 'Modifier ' . $employe->nom_complet)
 
 @section('content')
 
-<div class="max-w-3xl mx-auto px-4 py-8" x-data="{
-    deptOpen: false,
-    posteOpen: false,
-    statutOpen: false,
-    sexeOpen: false,
-    selectedDept: '{{ old('departement_id', $employe->departement_id) }}',
-    selectedPoste: '{{ old('poste_id', $employe->poste_id) }}',
-    selectedStatut: '{{ old('statut', $employe->statut) }}',
-    selectedSexe: '{{ old('sexe', $employe->sexe) }}',
-    departements: {{ Js::from($departements->map(fn($d) => ['id' => (string)$d->id, 'nom' => $d->nom])->values()) }},
-    postes: {{ Js::from($postes->map(fn($p) => ['id' => (string)$p->id, 'nom' => $p->nom])->values()) }},
-    get selectedDeptName() {
-        if (!this.selectedDept) return '';
-        const d = this.departements.find(d => d.id == this.selectedDept);
-        return d ? d.nom : '';
-    },
-    get selectedPosteName() {
-        if (!this.selectedPoste) return '';
-        const p = this.postes.find(p => p.id == this.selectedPoste);
-        return p ? p.nom : '';
-    },
-    sexeOptions: [
-        { id: 'Homme', nom: 'Homme' },
-        { id: 'Femme', nom: 'Femme' }
-    ],
-    statutOptions: [
-        { id: 'actif', nom: 'Actif' },
-        { id: 'inactif', nom: 'Inactif' }
-    ]
-}">
+@php
+    $photoActuelle = $employe->photo
+        ? \Illuminate\Support\Facades\Storage::url($employe->photo)
+        : null;
+@endphp
+
+<div
+    class="employee-page min-h-screen px-4 py-8 sm:px-6 lg:px-8"
+    x-data="{
+        selectedDept: @js(old('departement_id', $employe->departement_id)),
+        selectedPoste: @js(old('poste_id', $employe->poste_id)),
+        existingPhoto: @js($photoActuelle),
+        photoPreview: null,
+        progress: 0,
+
+        postesData: @js($postes->map(fn($p) => [
+            'id' => (string) $p->id,
+            'nom' => $p->nom,
+            'departement_id' => (string) $p->departement_id,
+        ])->values()),
+
+        get filteredPostes() {
+            return this.postesData.filter(
+                poste => poste.departement_id == this.selectedDept
+            );
+        },
+
+        updateProgress() {
+            const form = this.$refs.employeeForm;
+
+            if (!form) return;
+
+            const requiredFields = [...form.querySelectorAll('[required]')];
+
+            const completed = requiredFields.filter(field => {
+                return field.value && field.value.trim() !== '';
+            }).length;
+
+            this.progress = requiredFields.length
+                ? Math.round((completed / requiredFields.length) * 100)
+                : 0;
+        },
+
+        changeDepartment() {
+            const currentPoste = this.postesData.find(
+                poste => poste.id == this.selectedPoste
+            );
+
+            if (!currentPoste || currentPoste.departement_id != this.selectedDept) {
+                this.selectedPoste = '';
+            }
+
+            this.updateProgress();
+        },
+
+        previewPhoto(event) {
+            const file = event.target.files[0];
+
+            if (!file) return;
+
+            if (this.photoPreview) {
+                URL.revokeObjectURL(this.photoPreview);
+            }
+
+            this.photoPreview = URL.createObjectURL(file);
+        }
+    }"
+    x-init="$nextTick(() => updateProgress())"
+>
 
     {{-- Fil d'Ariane --}}
-    <div class="flex items-center gap-2 text-sm text-purple-500 font-medium mb-6 px-2">
-        <a href="{{ route('gestion.employes.index') }}" class="hover:text-purple-700 transition-colors">Employés</a>
-        <span>/</span>
-        <span class="text-purple-900 font-bold">Modifier</span>
+    <div class="max-w-5xl mx-auto mb-6 flex items-center gap-2 text-sm">
+        <a href="{{ route('gestion.employes.index') }}"
+           class="font-semibold text-purple-600 hover:text-purple-900 transition">
+            Employés
+        </a>
+
+        <span class="text-slate-300">/</span>
+
+        <span class="font-semibold text-slate-600">
+            Modifier un employé
+        </span>
     </div>
 
-    {{-- Carte principale --}}
-    <div class="relative bg-white rounded-[40px] shadow-[0_20px_60px_-15px_rgba(147,51,234,0.3)] overflow-hidden">
-        
+    <div class="max-w-5xl mx-auto">
+
         {{-- En-tête --}}
-        <div class="px-8 pt-10 pb-6 text-center">
-            <h1 class="text-3xl font-extrabold text-purple-700 tracking-wide uppercase">Modifier</h1>
-            <p class="text-sm font-semibold text-slate-400 tracking-widest uppercase mt-1">Mise à jour</p>
-            <p class="text-xs text-purple-500 mt-3 bg-purple-50 inline-block px-3 py-1 rounded-full border border-purple-100">
-                {{ $employe->matricule }}
-            </p>
+        <div class="purple-gradient rounded-3xl p-6 sm:p-8 mb-7 shadow-xl relative overflow-hidden">
+            <div class="absolute -right-12 -top-16 w-64 h-64 rounded-full bg-white/10 blur-2xl"></div>
+            <div class="absolute -left-10 -bottom-20 w-56 h-56 rounded-full bg-purple-300/20 blur-2xl"></div>
+
+            <div class="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-5">
+
+                <div>
+                    <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 border border-white/20 text-purple-100 text-xs font-semibold mb-4">
+                        <span class="w-2 h-2 rounded-full bg-green-400"></span>
+                        Gestion des employés
+                    </div>
+
+                    <h1 class="text-2xl sm:text-3xl font-extrabold text-white">
+                        Modifier un employé
+                    </h1>
+
+                    <p class="text-purple-100/80 text-sm mt-2">
+                        Actualisez les informations personnelles et professionnelles.
+                    </p>
+                </div>
+
+                <div class="bg-white/10 border border-white/20 rounded-2xl p-4 min-w-40">
+                    <p class="text-purple-100 text-xs mb-1">Matricule</p>
+                    <p class="text-white text-xl font-bold font-mono">
+                        {{ $employe->matricule }}
+                    </p>
+                    <p class="text-purple-100/70 text-xs mt-1">
+                        Identifiant non modifiable
+                    </p>
+                </div>
+
+            </div>
+        </div>
+
+        {{-- Progression --}}
+        <div class="premium-card p-5 mb-6">
+            <div class="flex items-center justify-between mb-3">
+                <div>
+                    <p class="text-sm font-bold text-slate-800">
+                        Progression du formulaire
+                    </p>
+                    <p class="text-xs text-slate-400 mt-1">
+                        Complétion des champs obligatoires
+                    </p>
+                </div>
+
+                <span class="text-sm font-extrabold text-purple-700"
+                      x-text="progress + '%'"></span>
+            </div>
+
+            <div class="h-2.5 bg-purple-50 rounded-full overflow-hidden">
+                <div class="progress-fill h-full rounded-full"
+                     :style="`width: ${progress}%`"></div>
+            </div>
         </div>
 
         {{-- Formulaire --}}
-        <form action="{{ route('gestion.employes.update', $employe) }}" method="POST" class="px-8 pb-10 relative z-10">
+        <form
+            x-ref="employeeForm"
+            action="{{ route('gestion.employes.update', $employe) }}"
+            method="POST"
+            enctype="multipart/form-data"
+            @input="updateProgress()"
+            @change="updateProgress()"
+            class="space-y-6"
+        >
             @csrf
             @method('PUT')
 
-            {{-- Champs cachés pour la soumission --}}
-            <input type="hidden" name="sexe" x-model="selectedSexe">
-            <input type="hidden" name="departement_id" x-model="selectedDept">
-            <input type="hidden" name="poste_id" x-model="selectedPoste">
-            <input type="hidden" name="statut" x-model="selectedStatut">
-
+            {{-- Erreurs --}}
             @if($errors->any())
-                <div class="mb-6 bg-red-50 border border-red-100 text-red-600 rounded-2xl p-4 text-sm">
-                    <ul class="list-disc list-inside space-y-1">
+                <div class="bg-red-50 border border-red-200 rounded-2xl p-5">
+                    <div class="flex items-center gap-2 text-red-700 font-bold text-sm mb-2">
+                        <span>⚠</span>
+                        Vérifiez les informations saisies
+                    </div>
+
+                    <ul class="list-disc list-inside space-y-1 text-sm text-red-600">
                         @foreach($errors->all() as $error)
                             <li>{{ $error }}</li>
                         @endforeach
@@ -75,340 +177,634 @@
                 </div>
             @endif
 
-            <div class="space-y-6">
-                
-                {{-- SECTION 1 : INFOS PERSONNELLES --}}
-                <div>
-                    <h2 class="text-xs font-bold text-purple-400 uppercase tracking-widest mb-4 flex items-center gap-2">
-                        <span class="flex items-center justify-center w-6 h-6 rounded-full bg-purple-100 text-purple-600 text-[10px]">1</span>
-                        Informations personnelles
-                    </h2>
+            {{-- SECTION 1 : IDENTITÉ --}}
+            <section class="premium-card">
 
-                    <div class="space-y-3">
-                        
-                        {{-- MATRICULE DÉSACTIVÉ --}}
-                        <div class="relative">
-                            <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                                <svg class="h-5 w-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14"/></svg>
-                            </div>
-                            <input type="hidden" name="matricule" value="{{ old('matricule', $employe->matricule) }}">
-                            <input type="text" disabled value="{{ $employe->matricule }}"
-                                class="w-full pl-12 pr-12 py-3.5 bg-slate-100 border-2 border-dashed border-slate-300 text-slate-500 font-mono font-bold text-sm rounded-full cursor-not-allowed">
-                            <div class="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none">
-                                <svg class="h-4 w-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
-                            </div>
-                        </div>
-                        <p class="text-[10px] text-slate-400 pl-4 italic -mt-1">Matricule non modifiable</p>
-
-                        {{-- Prénom & Nom --}}
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-                            <div class="relative">
-                                <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                                    <svg class="h-5 w-5 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
-                                </div>
-                                <input type="text" name="prenom" required value="{{ old('prenom', $employe->prenom) }}" placeholder="Prénom *"
-                                    class="w-full pl-12 pr-4 py-3.5 bg-white border-2 border-purple-200 text-purple-900 text-sm rounded-full focus:ring-4 focus:ring-purple-500/20 focus:border-purple-500 placeholder-purple-300 transition-all outline-none">
-                            </div>
-                            <div class="relative">
-                                <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                                    <svg class="h-5 w-5 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
-                                </div>
-                                <input type="text" name="nom" required value="{{ old('nom', $employe->nom) }}" placeholder="Nom *"
-                                    class="w-full pl-12 pr-4 py-3.5 bg-white border-2 border-purple-200 text-purple-900 text-sm rounded-full focus:ring-4 focus:ring-purple-500/20 focus:border-purple-500 placeholder-purple-300 transition-all outline-none">
-                            </div>
-                        </div>
-
-                        {{-- SEXE DROPDOWN PRO --}}
-                        <div class="relative" @click.away="sexeOpen = false">
-                            <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none z-10">
-                                <svg class="h-5 w-5 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
-                            </div>
-                            
-                            <button type="button" @click="sexeOpen = !sexeOpen" 
-                                class="relative w-full pl-12 pr-10 py-3.5 bg-white border-2 border-purple-200 text-left text-purple-900 text-sm rounded-full focus:outline-none focus:ring-4 focus:ring-purple-500/20 focus:border-purple-500 transition-all hover:border-purple-300">
-                                <span x-text="sexeOptions.find(s => s.id === selectedSexe)?.nom || '— Sexe —'" :class="!selectedSexe ? 'text-purple-300' : 'font-medium'"></span>
-                                <span class="absolute inset-y-0 right-0 pr-5 flex items-center pointer-events-none">
-                                    <svg class="h-4 w-4 text-purple-500 transition-transform duration-200" :class="sexeOpen ? 'rotate-180' : ''" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
-                                </span>
-                            </button>
-
-                            {{-- Menu Déroulant Sexe --}}
-                            <div x-show="sexeOpen" 
-                                 x-transition:enter="transition ease-out duration-200"
-                                 x-transition:enter-start="opacity-0 translate-y-2 scale-95"
-                                 x-transition:enter-end="opacity-100 translate-y-0 scale-100"
-                                 x-transition:leave="transition ease-in duration-150"
-                                 x-transition:leave-start="opacity-100 translate-y-0 scale-100"
-                                 x-transition:leave-end="opacity-0 translate-y-2 scale-95"
-                                 class="absolute z-50 mt-2 w-full bg-white rounded-3xl shadow-[0_25px_60px_-15px_rgba(147,51,234,0.5)] ring-1 ring-purple-100 overflow-hidden" 
-                                 style="display: none;">
-                                <div class="bg-gradient-to-r from-purple-50 to-pink-50 px-5 py-3 border-b border-purple-100/50">
-                                    <p class="text-[10px] font-black text-purple-400 uppercase tracking-widest">Sexe</p>
-                                </div>
-                                <ul class="max-h-64 overflow-y-auto p-2 space-y-1 custom-scrollbar">
-                                    <template x-for="opt in sexeOptions" :key="opt.id">
-                                        <li @click="selectedSexe = opt.id; sexeOpen = false"
-                                            class="group flex items-center justify-between px-4 py-2.5 rounded-2xl cursor-pointer transition-all duration-150"
-                                            :class="selectedSexe === opt.id ? 'bg-purple-600 text-white shadow-md shadow-purple-500/30' : 'hover:bg-purple-50 text-purple-900'">
-                                            <span class="text-sm font-semibold" x-text="opt.nom"></span>
-                                            <div :class="selectedSexe === opt.id ? 'bg-white/20' : 'bg-transparent group-hover:bg-purple-100'" class="w-6 h-6 rounded-full flex items-center justify-center transition-colors">
-                                                <svg x-show="selectedSexe === opt.id" class="h-3.5 w-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
-                                            </div>
-                                        </li>
-                                    </template>
-                                </ul>
-                            </div>
-                        </div>
-
-                        {{-- Email --}}
-                        <div class="relative">
-                            <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                                <svg class="h-5 w-5 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
-                            </div>
-                            <input type="email" name="email" required value="{{ old('email', $employe->email) }}" placeholder="Adresse email *"
-                                class="w-full pl-12 pr-4 py-3.5 bg-white border-2 border-purple-200 text-purple-900 text-sm rounded-full focus:ring-4 focus:ring-purple-500/20 focus:border-purple-500 placeholder-purple-300 transition-all outline-none">
-                        </div>
-
-                        {{-- Téléphone --}}
-                        <div class="relative">
-                            <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                                <svg class="h-5 w-5 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/></svg>
-                            </div>
-                            <input type="text" name="telephone" value="{{ old('telephone', $employe->telephone) }}" placeholder="Numéro de téléphone"
-                                class="w-full pl-12 pr-4 py-3.5 bg-white border-2 border-purple-200 text-purple-900 text-sm rounded-full focus:ring-4 focus:ring-purple-500/20 focus:border-purple-500 placeholder-purple-300 transition-all outline-none">
-                        </div>
-
-                        {{-- Dates --}}
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-                            <div class="relative">
-                                <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                                    <svg class="h-5 w-5 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
-                                </div>
-                                <input type="date" name="date_naissance" value="{{ old('date_naissance', $employe->date_naissance?->format('Y-m-d')) }}"
-                                    class="w-full pl-12 pr-4 py-3.5 bg-white border-2 border-purple-200 text-purple-900 text-sm rounded-full focus:ring-4 focus:ring-purple-500/20 focus:border-purple-500 placeholder-purple-300 transition-all outline-none">
-                            </div>
-                            <div class="relative">
-                                <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                                    <svg class="h-5 w-5 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
-                                </div>
-                                <input type="date" name="date_embauche" value="{{ old('date_embauche', $employe->date_embauche?->format('Y-m-d')) }}"
-                                    class="w-full pl-12 pr-4 py-3.5 bg-white border-2 border-purple-200 text-purple-900 text-sm rounded-full focus:ring-4 focus:ring-purple-500/20 focus:border-purple-500 placeholder-purple-300 transition-all outline-none">
-                            </div>
-                        </div>
-
-                        {{-- Adresse --}}
-                        <div class="relative">
-                            <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                                <svg class="h-5 w-5 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-                            </div>
-                            <input type="text" name="adresse" value="{{ old('adresse', $employe->adresse) }}" placeholder="Adresse complète"
-                                class="w-full pl-12 pr-4 py-3.5 bg-white border-2 border-purple-200 text-purple-900 text-sm rounded-full focus:ring-4 focus:ring-purple-500/20 focus:border-purple-500 placeholder-purple-300 transition-all outline-none">
-                        </div>
+                <div class="section-heading">
+                    <div class="section-icon">01</div>
+                    <div>
+                        <h2 class="text-lg font-extrabold text-slate-800">
+                            Informations personnelles
+                        </h2>
+                        <p class="text-xs text-slate-400 mt-1">
+                            Identité et informations individuelles de l'employé
+                        </p>
                     </div>
                 </div>
 
-                {{-- SECTION 2 : AFFECTATION --}}
-                <div class="pt-2">
-                    <h2 class="text-xs font-bold text-purple-400 uppercase tracking-widest mb-4 flex items-center gap-2">
-                        <span class="flex items-center justify-center w-6 h-6 rounded-full bg-purple-100 text-purple-600 text-[10px]">2</span>
-                        Affectation
-                    </h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
 
-                    <div class="space-y-3">
-                        
-                        {{-- DÉPARTEMENT DROPDOWN PRO --}}
-                        <div class="relative" @click.away="deptOpen = false">
-                            <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none z-10">
-                                <svg class="h-5 w-5 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5"/></svg>
+                    {{-- Matricule --}}
+                    <div class="md:col-span-2">
+                        <label class="field-label">
+                            Matricule
+                            <span class="field-optional">Non modifiable</span>
+                        </label>
+
+                        <input
+                            type="text"
+                            value="{{ $employe->matricule }}"
+                            disabled
+                            class="premium-input bg-slate-100 text-slate-500 cursor-not-allowed font-mono font-bold"
+                        >
+                    </div>
+
+                    {{-- Prénom --}}
+                    <div>
+                        <label for="prenom" class="field-label">
+                            Prénom <span class="required-mark">*</span>
+                        </label>
+
+                        <input
+                            id="prenom"
+                            type="text"
+                            name="prenom"
+                            value="{{ old('prenom', $employe->prenom) }}"
+                            required
+                            maxlength="100"
+                            placeholder="Ex. : Jean"
+                            class="premium-input"
+                        >
+
+                        @error('prenom')
+                            <p class="field-error">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    {{-- Nom --}}
+                    <div>
+                        <label for="nom" class="field-label">
+                            Nom <span class="required-mark">*</span>
+                        </label>
+
+                        <input
+                            id="nom"
+                            type="text"
+                            name="nom"
+                            value="{{ old('nom', $employe->nom) }}"
+                            required
+                            maxlength="100"
+                            placeholder="Ex. : Rakoto"
+                            class="premium-input"
+                        >
+
+                        @error('nom')
+                            <p class="field-error">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    {{-- Sexe --}}
+                    <div>
+                        <label for="sexe" class="field-label">
+                            Sexe <span class="field-optional">Facultatif</span>
+                        </label>
+
+                        <select id="sexe" name="sexe" class="premium-input">
+                            <option value="">Sélectionner le sexe</option>
+                            <option value="Homme" @selected(old('sexe', $employe->sexe) === 'Homme')>
+                                Homme
+                            </option>
+                            <option value="Femme" @selected(old('sexe', $employe->sexe) === 'Femme')>
+                                Femme
+                            </option>
+                        </select>
+
+                        @error('sexe')
+                            <p class="field-error">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    {{-- Date naissance --}}
+                    <div>
+                        <label for="date_naissance" class="field-label">
+                            Date de naissance
+                            <span class="field-optional">Facultatif</span>
+                        </label>
+
+                        <input
+                            id="date_naissance"
+                            type="date"
+                            name="date_naissance"
+                            value="{{ old('date_naissance', $employe->date_naissance?->format('Y-m-d')) }}"
+                            class="premium-input"
+                        >
+
+                        @error('date_naissance')
+                            <p class="field-error">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    {{-- Photo --}}
+                    <div class="md:col-span-2">
+                        <label class="field-label">
+                            Photo de profil
+                            <span class="field-optional">Facultatif</span>
+                        </label>
+
+                        <div class="flex flex-col sm:flex-row items-center gap-6 p-5 rounded-2xl border border-purple-100 bg-purple-50/40">
+
+                            <div class="photo-frame w-32 h-32 flex-shrink-0">
+                                <template x-if="photoPreview || existingPhoto">
+                                    <img
+                                        :src="photoPreview || existingPhoto"
+                                        alt="Photo de l'employé"
+                                        class="w-full h-full object-cover rounded-2xl"
+                                    >
+                                </template>
+
+                                <template x-if="!photoPreview && !existingPhoto">
+                                    <div class="w-full h-full flex flex-col items-center justify-center text-purple-400">
+                                        <svg class="w-10 h-10 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14m-6 0l-4.553 2.276A1 1 0 013 15.382V8.618a1 1 0 011.447-.894L9 10m6-3a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                        </svg>
+                                        <span class="text-xs font-semibold">Aucune photo</span>
+                                    </div>
+                                </template>
                             </div>
-                            
-                            <button type="button" @click="deptOpen = !deptOpen" 
-                                class="relative w-full pl-12 pr-10 py-3.5 bg-white border-2 border-purple-200 text-left text-purple-900 text-sm rounded-full focus:outline-none focus:ring-4 focus:ring-purple-500/20 focus:border-purple-500 transition-all hover:border-purple-300">
-                                <span x-text="selectedDeptName || '— Sélectionner un département * —'" :class="!selectedDeptName ? 'text-purple-300' : 'font-medium'"></span>
-                                <span class="absolute inset-y-0 right-0 pr-5 flex items-center pointer-events-none">
-                                    <svg class="h-4 w-4 text-purple-500 transition-transform duration-200" :class="deptOpen ? 'rotate-180' : ''" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
-                                </span>
-                            </button>
 
-                            <div x-show="deptOpen" 
-                                 x-transition:enter="transition ease-out duration-200"
-                                 x-transition:enter-start="opacity-0 translate-y-2 scale-95"
-                                 x-transition:enter-end="opacity-100 translate-y-0 scale-100"
-                                 x-transition:leave="transition ease-in duration-150"
-                                 x-transition:leave-start="opacity-100 translate-y-0 scale-100"
-                                 x-transition:leave-end="opacity-0 translate-y-2 scale-95"
-                                 class="absolute z-50 mt-2 w-full bg-white rounded-3xl shadow-[0_25px_60px_-15px_rgba(147,51,234,0.5)] ring-1 ring-purple-100 overflow-hidden" 
-                                 style="display: none;">
-                                <div class="bg-gradient-to-r from-purple-50 to-pink-50 px-5 py-3 border-b border-purple-100/50">
-                                    <p class="text-[10px] font-black text-purple-400 uppercase tracking-widest">Départements</p>
-                                </div>
-                                <ul class="max-h-64 overflow-y-auto p-2 space-y-1 custom-scrollbar">
-                                    <template x-for="dept in departements" :key="dept.id">
-                                        <li @click="selectedDept = dept.id; deptOpen = false"
-                                            class="group flex items-center justify-between px-4 py-2.5 rounded-2xl cursor-pointer transition-all duration-150"
-                                            :class="selectedDept == dept.id ? 'bg-purple-600 text-white shadow-md shadow-purple-500/30' : 'hover:bg-purple-50 text-purple-900'">
-                                            <span class="text-sm font-semibold" x-text="dept.nom"></span>
-                                            <div :class="selectedDept == dept.id ? 'bg-white/20' : 'bg-transparent group-hover:bg-purple-100'" class="w-6 h-6 rounded-full flex items-center justify-center transition-colors">
-                                                <svg x-show="selectedDept == dept.id" class="h-3.5 w-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
-                                            </div>
-                                        </li>
-                                    </template>
-                                    <li x-show="departements.length === 0" class="px-4 py-8 text-purple-300 italic text-center text-xs">Aucun département disponible</li>
-                                </ul>
+                            <div class="flex-1 text-center sm:text-left">
+                                <p class="font-bold text-slate-800 text-sm">
+                                    Modifier la photo de l'employé
+                                </p>
+
+                                <p class="text-xs text-slate-500 mt-2 mb-4">
+                                    Choisissez une nouvelle photo pour remplacer l'actuelle.
+                                    Formats JPG, JPEG, PNG ou WEBP. Maximum 2 Mo.
+                                </p>
+
+                                <label for="photo"
+                                       class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl purple-gradient text-white text-xs font-bold cursor-pointer hover:opacity-90 transition">
+                                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1M12 12V4m0 0L8 8m4-4l4 4"/>
+                                    </svg>
+                                    Choisir une photo
+                                </label>
+
+                                <input
+                                    id="photo"
+                                    type="file"
+                                    name="photo"
+                                    accept=".jpg,.jpeg,.png,.webp"
+                                    class="hidden"
+                                    @change="previewPhoto($event)"
+                                >
                             </div>
                         </div>
+
+                        @error('photo')
+                            <p class="field-error">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                </div>
+            </section>
+
+            {{-- SECTION 2 : COORDONNÉES --}}
+            <section class="premium-card">
+
+                <div class="section-heading">
+                    <div class="section-icon">02</div>
+                    <div>
+                        <h2 class="text-lg font-extrabold text-slate-800">
+                            Coordonnées
+                        </h2>
+                        <p class="text-xs text-slate-400 mt-1">
+                            Moyens de contact et adresse de l'employé
+                        </p>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+
+                    <div>
+                        <label for="email" class="field-label">
+                            Adresse e-mail
+                            <span class="field-optional">Facultatif</span>
+                        </label>
+
+                        <input
+                            id="email"
+                            type="email"
+                            name="email"
+                            value="{{ old('email', $employe->email) }}"
+                            placeholder="exemple@email.com"
+                            class="premium-input"
+                        >
+
+                        @error('email')
+                            <p class="field-error">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    <div>
+                        <label for="telephone" class="field-label">
+                            Téléphone
+                            <span class="field-optional">Facultatif</span>
+                        </label>
+
+                        <input
+                            id="telephone"
+                            type="text"
+                            name="telephone"
+                            value="{{ old('telephone', $employe->telephone) }}"
+                            maxlength="20"
+                            placeholder="Ex. : 034 00 000 00"
+                            class="premium-input"
+                        >
+
+                        @error('telephone')
+                            <p class="field-error">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    <div class="md:col-span-2">
+                        <label for="adresse" class="field-label">
+                            Adresse complète
+                            <span class="field-optional">Facultatif</span>
+                        </label>
+
+                        <textarea
+                            id="adresse"
+                            name="adresse"
+                            rows="3"
+                            placeholder="Saisir l'adresse complète..."
+                            class="premium-input resize-y"
+                        >{{ old('adresse', $employe->adresse) }}</textarea>
+
+                        @error('adresse')
+                            <p class="field-error">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                </div>
+            </section>
+
+            {{-- SECTION 3 : AFFECTATION --}}
+            <section class="premium-card">
+
+                <div class="section-heading">
+                    <div class="section-icon">03</div>
+                    <div>
+                        <h2 class="text-lg font-extrabold text-slate-800">
+                            Informations professionnelles
+                        </h2>
+                        <p class="text-xs text-slate-400 mt-1">
+                            Affectation, date d'embauche et situation professionnelle
+                        </p>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+
+                    {{-- Date embauche --}}
+                    <div>
+                        <label for="date_embauche" class="field-label">
+                            Date d'embauche <span class="required-mark">*</span>
+                        </label>
+
+                        <input
+                            id="date_embauche"
+                            type="date"
+                            name="date_embauche"
+                            value="{{ old('date_embauche', $employe->date_embauche?->format('Y-m-d')) }}"
+                            required
+                            class="premium-input"
+                        >
+
+                        @error('date_embauche')
+                            <p class="field-error">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    {{-- Statut --}}
+                    <div>
+                        <label for="statut" class="field-label">
+                            Statut <span class="required-mark">*</span>
+                        </label>
+
+                        <select
+                            id="statut"
+                            name="statut"
+                            required
+                            class="premium-input"
+                        >
+                            <option value="actif" @selected(old('statut', $employe->statut) === 'actif')>
+                                Actif
+                            </option>
+
+                            <option value="inactif" @selected(old('statut', $employe->statut) === 'inactif')>
+                                Inactif
+                            </option>
+
+                            <option value="sorti" @selected(old('statut', $employe->statut) === 'sorti')>
+                                Sorti
+                            </option>
+                        </select>
+
+                        @error('statut')
+                            <p class="field-error">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    {{-- Département --}}
+                    <div>
+                        <label for="departement_id" class="field-label">
+                            Département <span class="required-mark">*</span>
+                        </label>
+
+                        <select
+                            id="departement_id"
+                            name="departement_id"
+                            x-model="selectedDept"
+                            @change="changeDepartment()"
+                            required
+                            class="premium-input"
+                        >
+                            <option value="">Sélectionner un département</option>
+
+                            @foreach($departements as $departement)
+                                <option value="{{ $departement->id }}">
+                                    {{ $departement->nom }}
+                                </option>
+                            @endforeach
+                        </select>
+
                         @error('departement_id')
-                            <p class="text-red-500 text-xs pl-4 -mt-1">{{ $message }}</p>
+                            <p class="field-error">{{ $message }}</p>
                         @enderror
-
-                        {{-- POSTE DROPDOWN PRO --}}
-                        <div class="relative" @click.away="posteOpen = false">
-                            <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none z-10">
-                                <svg class="h-5 w-5 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
-                            </div>
-                            
-                            <button type="button" @click="posteOpen = !posteOpen" 
-                                class="relative w-full pl-12 pr-10 py-3.5 bg-white border-2 border-purple-200 text-left text-purple-900 text-sm rounded-full focus:outline-none focus:ring-4 focus:ring-purple-500/20 focus:border-purple-500 transition-all hover:border-purple-300">
-                                <span x-text="selectedPosteName || '— Sélectionner un poste * —'" :class="!selectedPosteName ? 'text-purple-300' : 'font-medium'"></span>
-                                <span class="absolute inset-y-0 right-0 pr-5 flex items-center pointer-events-none">
-                                    <svg class="h-4 w-4 text-purple-500 transition-transform duration-200" :class="posteOpen ? 'rotate-180' : ''" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
-                                </span>
-                            </button>
-
-                            <div x-show="posteOpen" 
-                                 x-transition:enter="transition ease-out duration-200"
-                                 x-transition:enter-start="opacity-0 translate-y-2 scale-95"
-                                 x-transition:enter-end="opacity-100 translate-y-0 scale-100"
-                                 x-transition:leave="transition ease-in duration-150"
-                                 x-transition:leave-start="opacity-100 translate-y-0 scale-100"
-                                 x-transition:leave-end="opacity-0 translate-y-2 scale-95"
-                                 class="absolute z-40 mt-2 w-full bg-white rounded-3xl shadow-[0_25px_60px_-15px_rgba(147,51,234,0.5)] ring-1 ring-purple-100 overflow-hidden" 
-                                 style="display: none;">
-                                <div class="bg-gradient-to-r from-purple-50 to-pink-50 px-5 py-3 border-b border-purple-100/50">
-                                    <p class="text-[10px] font-black text-purple-400 uppercase tracking-widest">Postes disponibles</p>
-                                </div>
-                                <ul class="max-h-64 overflow-y-auto p-2 space-y-1 custom-scrollbar">
-                                    <template x-for="poste in postes" :key="poste.id">
-                                        <li @click="selectedPoste = poste.id; posteOpen = false"
-                                            class="group flex items-center justify-between px-4 py-2.5 rounded-2xl cursor-pointer transition-all duration-150"
-                                            :class="selectedPoste == poste.id ? 'bg-purple-600 text-white shadow-md shadow-purple-500/30' : 'hover:bg-purple-50 text-purple-900'">
-                                            <span class="text-sm font-semibold" x-text="poste.nom"></span>
-                                            <div :class="selectedPoste == poste.id ? 'bg-white/20' : 'bg-transparent group-hover:bg-purple-100'" class="w-6 h-6 rounded-full flex items-center justify-center transition-colors">
-                                                <svg x-show="selectedPoste == poste.id" class="h-3.5 w-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
-                                            </div>
-                                        </li>
-                                    </template>
-                                    <li x-show="postes.length === 0" class="px-4 py-8 text-purple-300 italic text-center text-xs">Aucun poste disponible</li>
-                                </ul>
-                            </div>
-                        </div>
-                        @error('poste_id')
-                            <p class="text-red-500 text-xs pl-4 -mt-1">{{ $message }}</p>
-                        @enderror
-
-                        {{-- STATUT DROPDOWN PRO --}}
-                        <div class="relative mt-2" @click.away="statutOpen = false">
-                            <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none z-10">
-                                <svg class="h-5 w-5 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                            </div>
-
-                            <button type="button" @click="statutOpen = !statutOpen" 
-                                class="relative w-full pl-12 pr-10 py-3.5 bg-white border-2 border-purple-200 text-left text-purple-900 text-sm rounded-full focus:outline-none focus:ring-4 focus:ring-purple-500/20 focus:border-purple-500 transition-all hover:border-purple-300">
-                                <span x-text="statutOptions.find(s => s.id === selectedStatut)?.nom || '— Sélectionner un statut * —'" class="font-medium"></span>
-                                <span class="absolute inset-y-0 right-0 pr-5 flex items-center pointer-events-none">
-                                    <svg class="h-4 w-4 text-purple-500 transition-transform duration-200" :class="statutOpen ? 'rotate-180' : ''" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
-                                </span>
-                            </button>
-
-                            <div x-show="statutOpen" 
-                                 x-transition:enter="transition ease-out duration-200"
-                                 x-transition:enter-start="opacity-0 translate-y-2 scale-95"
-                                 x-transition:enter-end="opacity-100 translate-y-0 scale-100"
-                                 x-transition:leave="transition ease-in duration-150"
-                                 x-transition:leave-start="opacity-100 translate-y-0 scale-100"
-                                 x-transition:leave-end="opacity-0 translate-y-2 scale-95"
-                                 class="absolute z-30 mt-2 w-full bg-white rounded-3xl shadow-[0_25px_60px_-15px_rgba(147,51,234,0.5)] ring-1 ring-purple-100 overflow-hidden" 
-                                 style="display: none;">
-                                <div class="bg-gradient-to-r from-purple-50 to-pink-50 px-5 py-3 border-b border-purple-100/50">
-                                    <p class="text-[10px] font-black text-purple-400 uppercase tracking-widest">Statut de l'employé</p>
-                                </div>
-                                <ul class="max-h-64 overflow-y-auto p-2 space-y-1 custom-scrollbar">
-                                    <template x-for="opt in statutOptions" :key="opt.id">
-                                        <li @click="selectedStatut = opt.id; statutOpen = false"
-                                            class="group flex items-center justify-between px-4 py-2.5 rounded-2xl cursor-pointer transition-all duration-150"
-                                            :class="selectedStatut === opt.id ? 'bg-purple-600 text-white shadow-md shadow-purple-500/30' : 'hover:bg-purple-50 text-purple-900'">
-                                            <span class="text-sm font-semibold" x-text="opt.nom"></span>
-                                            <div :class="selectedStatut === opt.id ? 'bg-white/20' : 'bg-transparent group-hover:bg-purple-100'" class="w-6 h-6 rounded-full flex items-center justify-center transition-colors">
-                                                <svg x-show="selectedStatut === opt.id" class="h-3.5 w-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
-                                            </div>
-                                        </li>
-                                    </template>
-                                </ul>
-                            </div>
-                        </div>
                     </div>
-                </div>
 
-                {{-- Actions --}}
-                <div class="pt-6 pb-2 space-y-4">
-                    <button type="submit"
-                        class="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white text-sm font-bold py-4 rounded-full shadow-[0_10px_20px_-10px_rgba(147,51,234,0.6)] transition-all hover:-translate-y-0.5 outline-none focus:ring-4 focus:ring-purple-500/30">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                    {{-- Poste --}}
+                    <div>
+                        <label for="poste_id" class="field-label">
+                            Poste <span class="required-mark">*</span>
+                        </label>
+
+                        <select
+                            id="poste_id"
+                            name="poste_id"
+                            x-model="selectedPoste"
+                            required
+                            :disabled="!selectedDept"
+                            class="premium-input"
+                        >
+                            <option value="">Sélectionner un poste</option>
+
+                            <template x-for="poste in filteredPostes" :key="poste.id">
+                                <option :value="poste.id" x-text="poste.nom"></option>
+                            </template>
+                        </select>
+
+                        @error('poste_id')
+                            <p class="field-error">{{ $message }}</p>
+                        @enderror
+
+                        <p class="text-xs text-slate-400 mt-2">
+                            Les postes proposés dépendent du département sélectionné.
+                        </p>
+                    </div>
+
+                </div>
+            </section>
+
+            {{-- ACTIONS --}}
+            <div class="premium-card p-5 sm:p-6">
+
+                <div class="flex flex-col sm:flex-row gap-3">
+
+                    <button
+                        type="submit"
+                        class="primary-button flex-1"
+                    >
+                        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
                         </svg>
-                        ENREGISTRER LES MODIFICATIONS
+
+                        Enregistrer les modifications
                     </button>
-                    
-                    <div class="flex items-center justify-between px-4 pt-2 border-t border-purple-100/50">
-                        <a href="{{ route('gestion.employes.index') }}"
-                            class="text-xs font-bold text-purple-400 hover:text-purple-600 py-2 transition-colors">
-                            Annuler
-                        </a>
-                        <button type="button"
-                            onclick="if(confirm('⚠️ Supprimer définitivement cet employé ?')) { document.getElementById('delete-form').submit(); }"
-                            class="text-xs font-bold text-red-400 hover:text-red-600 py-2 transition-colors">
-                            Supprimer l'employé
-                        </button>
-                    </div>
+
+                    <a
+                        href="{{ route('gestion.employes.index') }}"
+                        class="secondary-button"
+                    >
+                        Annuler
+                    </a>
+
                 </div>
+
+                <div class="mt-5 pt-4 border-t border-slate-100 flex justify-between items-center gap-3">
+                    <p class="text-xs text-slate-400">
+                        Les modifications seront enregistrées après confirmation.
+                    </p>
+
+                    <button
+                        type="button"
+                        onclick="if(confirm('Voulez-vous vraiment supprimer définitivement cet employé ?')) { document.getElementById('delete-form').submit(); }"
+                        class="text-xs font-bold text-red-500 hover:text-red-700 transition"
+                    >
+                        Supprimer l'employé
+                    </button>
+                </div>
+
             </div>
+
         </form>
 
-        {{-- Vagues décoratives --}}
-        <div class="absolute bottom-0 left-0 right-0 pointer-events-none overflow-hidden h-40">
-            <svg viewBox="0 0 500 150" preserveAspectRatio="none" class="w-full h-full">
-                <path fill="rgba(167, 139, 250, 0.4)" d="M0,100 C150,150 350,50 500,100 L500,150 L0,150 Z"></path>
-                <path fill="rgba(139, 92, 246, 0.8)" d="M0,120 C150,170 350,70 500,120 L500,150 L0,150 Z"></path>
-                <path fill="#7C3AED" d="M0,140 C150,190 350,90 500,140 L500,150 L0,150 Z"></path>
-            </svg>
-        </div>
+        {{-- Formulaire de suppression séparé --}}
+        <form
+            id="delete-form"
+            action="{{ route('gestion.employes.destroy', $employe) }}"
+            method="POST"
+            class="hidden"
+        >
+            @csrf
+            @method('DELETE')
+        </form>
 
     </div>
-
-    {{-- Formulaire de suppression caché --}}
-    <form id="delete-form" action="{{ route('gestion.employes.destroy', $employe) }}" method="POST" class="hidden">
-        @csrf
-        @method('DELETE')
-    </form>
-
 </div>
 
-@endsection
-
-{{-- CSS personnalisé pour la scrollbar --}}
 <style>
-    .custom-scrollbar::-webkit-scrollbar {
-        width: 6px;
+    .employee-page {
+        background:
+            radial-gradient(circle at 5% 5%, rgba(139, 92, 246, .08), transparent 28%),
+            radial-gradient(circle at 95% 30%, rgba(124, 58, 237, .06), transparent 30%),
+            #f8fafc;
     }
-    .custom-scrollbar::-webkit-scrollbar-track {
-        background: transparent;
-        margin: 8px 0;
+
+    .purple-gradient {
+        background: linear-gradient(115deg, #7c3aed 0%, #4c1d95 55%, #111827 100%);
     }
-    .custom-scrollbar::-webkit-scrollbar-thumb {
-        background-color: #d8b4fe;
-        border-radius: 10px;
+
+    .premium-card {
+        background: #ffffff;
+        border: 1px solid #eee8fa;
+        border-radius: 24px;
+        padding: 24px;
+        box-shadow: 0 10px 35px rgba(46, 16, 101, .045);
+        animation: cardEnter .55s ease both;
     }
-    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-        background-color: #a855f7;
+
+    .section-heading {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        padding-bottom: 20px;
+        margin-bottom: 22px;
+        border-bottom: 1px solid #f1ebfa;
+    }
+
+    .section-icon {
+        width: 42px;
+        height: 42px;
+        border-radius: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        background: linear-gradient(135deg, #7c3aed, #171024);
+        color: white;
+        font-size: 13px;
+        font-weight: 900;
+        box-shadow: 0 5px 15px rgba(124, 58, 237, .2);
+    }
+
+    .field-label {
+        display: block;
+        font-size: 13px;
+        font-weight: 750;
+        color: #334155;
+        margin-bottom: 9px;
+    }
+
+    .required-mark {
+        color: #dc2626;
+        font-weight: 900;
+        margin-left: 3px;
+    }
+
+    .field-optional {
+        display: inline-block;
+        margin-left: 6px;
+        color: #94a3b8;
+        font-size: 10px;
+        font-weight: 600;
+    }
+
+    .premium-input {
+        width: 100%;
+        min-height: 48px;
+        padding: 12px 15px;
+        border: 1.5px solid #e8def8;
+        border-radius: 13px;
+        background: #fff;
+        color: #312044;
+        font-size: 13px;
+        outline: none;
+        transition: all .2s ease;
+    }
+
+    .premium-input:focus {
+        border-color: #8b5cf6;
+        box-shadow: 0 0 0 4px rgba(139, 92, 246, .12);
+    }
+
+    .premium-input:disabled {
+        background: #f1f5f9;
+        color: #94a3b8;
+        cursor: not-allowed;
+    }
+
+    .field-error {
+        color: #dc2626;
+        font-size: 11px;
+        margin-top: 7px;
+    }
+
+    .progress-fill {
+        background: linear-gradient(90deg, #8b5cf6, #171024);
+        transition: width .35s ease;
+    }
+
+    .photo-frame {
+        padding: 4px;
+        border-radius: 19px;
+        background: linear-gradient(135deg, #8b5cf6, #171024);
+        box-shadow: 0 8px 20px rgba(124, 58, 237, .16);
+        overflow: hidden;
+    }
+
+    .primary-button {
+        min-height: 50px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        padding: 13px 22px;
+        border-radius: 14px;
+        background: linear-gradient(110deg, #7c3aed, #171024);
+        color: white;
+        font-size: 13px;
+        font-weight: 800;
+        box-shadow: 0 8px 20px rgba(91, 33, 182, .2);
+        transition: all .2s ease;
+    }
+
+    .primary-button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 12px 25px rgba(91, 33, 182, .28);
+    }
+
+    .secondary-button {
+        min-height: 50px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 13px 24px;
+        border: 1px solid #e9d5ff;
+        border-radius: 14px;
+        color: #6d28d9;
+        background: white;
+        font-size: 13px;
+        font-weight: 750;
+        transition: all .2s ease;
+    }
+
+    .secondary-button:hover {
+        background: #faf5ff;
+        border-color: #c4b5fd;
+    }
+
+    @keyframes cardEnter {
+        from {
+            opacity: 0;
+            transform: translateY(12px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    @media (max-width: 640px) {
+        .premium-card {
+            padding: 18px;
+            border-radius: 19px;
+        }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        .premium-card {
+            animation: none;
+        }
+
+        .premium-input,
+        .primary-button,
+        .secondary-button,
+        .progress-fill {
+            transition: none;
+        }
     }
 </style>
+
+@endsection

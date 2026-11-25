@@ -118,10 +118,9 @@ class EmployeController extends Controller
     {
         $departements = Departement::orderBy('nom')->get();
 
-        // ⭐ Uniquement les postes actifs (avec departement_id pour le JS)
-        // Récupérer uniquement les postes actifs.
-        // Dans la base de données, le statut est une chaîne : "actif".
-        $postes = Poste::actifs()
+        // Charger les postes actifs, que leur statut soit enregistré
+        // sous forme booléenne (1) ou sous forme de texte ("actif").
+        $postes = Poste::whereIn('statut', [1, '1', 'actif'])
             ->orderBy('nom')
             ->get(['id', 'nom', 'departement_id']);
 
@@ -145,6 +144,13 @@ class EmployeController extends Controller
             'departement_id'  => ['required', 'exists:departements,id'],
             'poste_id'        => ['required', 'exists:postes,id'],
             'statut'          => ['required', 'in:actif,inactif,sorti'],
+            'sexe' => ['nullable', 'in:Homme,Femme'],
+            'photo' => [
+                'nullable',
+                'image',
+                'mimes:jpg,jpeg,png,webp',
+                'max:2048',
+            ],
         ], [
             'nom.required'            => 'Le nom est obligatoire.',
             'prenom.required'         => 'Le prénom est obligatoire.',
@@ -153,6 +159,10 @@ class EmployeController extends Controller
             'departement_id.required' => 'Veuillez sélectionner un département.',
             'poste_id.required'       => 'Veuillez sélectionner un poste.',
             'statut.required'         => 'Veuillez sélectionner un statut.',
+            'sexe.in'                 => 'Le sexe sélectionné est invalide.',
+            'photo.image'             => 'Le fichier doit être une image.',
+            'photo.mimes'             => 'La photo doit être au format JPG, JPEG, PNG ou WEBP.',
+            'photo.max'               => 'La photo ne doit pas dépasser 2 Mo.',
         ]);
 
         // ⭐ VÉRIFICATION STRICTE : le poste doit appartenir au département
@@ -190,6 +200,21 @@ class EmployeController extends Controller
 
         // ⭐ Générer le matricule automatiquement
         $validated['matricule'] = $this->genererMatricule();
+
+        // Enregistrer la photo de l'employé dans le disque public.
+        if ($request->hasFile('photo')) {
+            $cheminPhoto = $request->file('photo')->store('employes', 'public');
+
+            if (!$cheminPhoto) {
+                return back()
+                    ->withInput()
+                    ->withErrors([
+                        'photo' => "Impossible d'enregistrer la photo. Veuillez réessayer.",
+                    ]);
+            }
+
+            $validated['photo'] = $cheminPhoto;
+        }
 
         try {
             Employe::create($validated);
@@ -235,25 +260,42 @@ class EmployeController extends Controller
     // UPDATE — Mise à jour avec validation stricte
     // =================================================================
 
+    
     public function update(Request $request, string $id)
     {
         $employe = Employe::findOrFail($id);
-
+    
         $validated = $request->validate([
-            'nom'             => ['required', 'string', 'max:100'],
-            'prenom'          => ['required', 'string', 'max:100'],
-            'email'           => ['nullable', 'email', 'unique:employes,email,' . $employe->id],
-            'telephone'       => ['nullable', 'string', 'max:20'],
-            'adresse'         => ['nullable', 'string'],
-            'date_naissance'  => ['nullable', 'date'],
-            'date_embauche'   => 'required|date',
-            'departement_id'  => ['required', 'exists:departements,id'],
-            'poste_id'        => ['required', 'exists:postes,id'],
-            'statut'          => ['required', 'in:actif,inactif,sorti'],
+            'nom' => ['required', 'string', 'max:100'],
+            'prenom' => ['required', 'string', 'max:100'],
+            'sexe' => ['nullable', 'in:Homme,Femme'],
+            'email' => [
+                'nullable',
+                'email',
+                'unique:employes,email,' . $employe->id,
+            ],
+            'telephone' => ['nullable', 'string', 'max:20'],
+            'adresse' => ['nullable', 'string'],
+            'date_naissance' => ['nullable', 'date'],
+            'date_embauche' => ['required', 'date'],
+            'departement_id' => ['required', 'exists:departements,id'],
+            'poste_id' => ['required', 'exists:postes,id'],
+            'statut' => ['required', 'in:actif,inactif,sorti'],
+            'photo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
+        ], [
+            'nom.required' => 'Le nom est obligatoire.',
+            'prenom.required' => 'Le prénom est obligatoire.',
+            'email.email' => 'Veuillez saisir une adresse email valide.',
+            'email.unique' => 'Cette adresse email est déjà utilisée.',
+            'departement_id.required' => 'Veuillez sélectionner un département.',
+            'poste_id.required' => 'Veuillez sélectionner un poste.',
+            'photo.image' => 'Le fichier doit être une image.',
+            'photo.mimes' => 'Formats autorisés : JPG, JPEG, PNG et WEBP.',
+            'photo.max' => 'La photo ne doit pas dépasser 2 Mo.',
         ]);
-
-        $poste = Poste::find($validated['poste_id']);
-
+    
+        $poste = Poste::findOrFail($validated['poste_id']);
+    
         // Vérifier que le poste appartient au département sélectionné.
         if ((string) $poste->departement_id !== (string) $validated['departement_id']) {
             return back()
@@ -262,10 +304,9 @@ class EmployeController extends Controller
                     'poste_id' => 'Le poste sélectionné ne correspond pas au département choisi.'
                 ]);
         }
-
-        // Si l'utilisateur change de poste, le nouveau poste doit être actif.
-        // On autorise cependant la conservation de son ancien poste,
-        // même si celui-ci a été désactivé.
+    
+        // Un nouveau poste doit être actif.
+        // L'ancien poste peut être conservé même s'il est désactivé.
         if (
             (string) $poste->id !== (string) $employe->poste_id
             && !$poste->isActif()
@@ -276,21 +317,37 @@ class EmployeController extends Controller
                     'poste_id' => 'Vous ne pouvez pas affecter cet employé à un nouveau poste inactif.'
                 ]);
         }
-
+    
         try {
+            // Enregistrer la nouvelle photo si elle a été sélectionnée.
+            if ($request->hasFile('photo')) {
+                $cheminPhoto = $request->file('photo')->store('employes', 'public');
+    
+                if (!$cheminPhoto) {
+                    return back()
+                        ->withInput()
+                        ->withErrors([
+                            'photo' => "Impossible d'enregistrer la photo. Veuillez réessayer.",
+                        ]);
+                }
+    
+                $validated['photo'] = $cheminPhoto;
+            }
+    
+            // Conserver l'ancienne photo si aucune nouvelle photo n'est envoyée.
             $employe->update($validated);
-
+    
             return redirect()
                 ->route('gestion.employes.index')
                 ->with('success', "Employé {$employe->nom_complet} modifié avec succès.");
-
+    
         } catch (QueryException $e) {
             $message = RelationHelper::logAndReturnMessage(
                 $e,
                 "Modification de l'employé {$employe->nom_complet}",
                 "Impossible de modifier l'employé. Veuillez vérifier les données."
             );
-
+    
             return back()
                 ->withInput()
                 ->withErrors(['error' => $message]);
