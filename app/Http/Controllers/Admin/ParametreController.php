@@ -12,6 +12,7 @@ use App\Models\Parametre;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 /**
  * ParametreController
@@ -124,6 +125,12 @@ class ParametreController extends Controller
             ),
         ];
 
+        // Types de congés
+        $typesConges = TypeConge::orderBy('nom')->get();
+
+        // Jours fériés
+        $joursFeries = JourFerie::orderBy('date')->get();
+
         return view(
             'admin.parametres.index',
             compact(
@@ -131,7 +138,9 @@ class ParametreController extends Controller
                 'parametresGeneraux',
                 'notificationsCanaux',
                 'notificationsModules',
-                'securite'
+                'securite',
+                'typesConges',
+                'joursFeries'
             )
         );
     }
@@ -404,5 +413,157 @@ class ParametreController extends Controller
             ->paginate(30);
 
         return view('admin.parametres.historique', compact('actions'));
+    }
+
+
+    /**
+     * Créer un type de congé.
+     */
+    public function storeTypeConge(Request $request)
+    {
+        $request->session()->flash('activeTab', 'conges');
+
+        $validated = $request->validate([
+            'nom' => ['required', 'string', 'max:100', 'unique:types_conges,nom'],
+            'code' => ['required', 'string', 'max:30', 'unique:types_conges,code'],
+            'description' => ['nullable', 'string'],
+            'duree_max' => ['nullable', 'integer', 'min:1'],
+            'necessite_justificatif' => ['nullable', 'boolean'],
+            'statut' => ['required', Rule::in(['actif', 'inactif'])],
+        ]);
+
+        $validated['necessite_justificatif'] =
+            $request->boolean('necessite_justificatif');
+
+        TypeConge::create($validated);
+
+        return redirect()
+            ->route('admin.parametres.index')
+            ->with('activeTab', 'conges')
+            ->with('success', 'Type de congé ajouté avec succès.');
+    }
+
+    /**
+     * Modifier un type de congé.
+     */
+    public function updateTypeConge(Request $request, TypeConge $typeConge)
+    {
+        $request->session()->flash('activeTab', 'conges');
+
+        $validated = $request->validate([
+            'nom' => [
+                'required',
+                'string',
+                'max:100',
+                Rule::unique('types_conges', 'nom')->ignore($typeConge->id),
+            ],
+            'code' => [
+                'required',
+                'string',
+                'max:30',
+                Rule::unique('types_conges', 'code')->ignore($typeConge->id),
+            ],
+            'description' => ['nullable', 'string'],
+            'duree_max' => ['nullable', 'integer', 'min:1'],
+            'necessite_justificatif' => ['nullable', 'boolean'],
+            'statut' => ['required', Rule::in(['actif', 'inactif'])],
+        ]);
+
+        $validated['necessite_justificatif'] =
+            $request->boolean('necessite_justificatif');
+
+        $typeConge->update($validated);
+
+        return redirect()
+            ->route('admin.parametres.index')
+            ->with('activeTab', 'conges')
+            ->with('success', 'Type de congé modifié avec succès.');
+    }
+
+    /**
+     * Supprimer un type de congé.
+     */
+    public function destroyTypeConge(TypeConge $typeConge)
+    {
+        if ($typeConge->demandesConges()->exists()) {
+            return redirect()
+                ->route('admin.parametres.index')
+                ->with('activeTab', 'conges')
+                ->with('error', 'Impossible de supprimer ce type : il est déjà utilisé dans une demande de congé.');
+        }
+
+        $typeConge->delete();
+
+        return redirect()
+            ->route('admin.parametres.index')
+            ->with('activeTab', 'conges')
+            ->with('success', 'Type de congé supprimé avec succès.');
+    }
+
+    /**
+     * Créer un jour férié.
+     */
+    public function storeJourFerie(Request $request)
+    {
+        $request->session()->flash('activeTab', 'conges');
+
+        $validated = $request->validate([
+            'nom' => ['required', 'string', 'max:150'],
+            'date' => ['required', 'date', 'unique:jours_feries,date'],
+            'description' => ['nullable', 'string'],
+            'est_chome' => ['nullable', 'boolean'],
+            'statut' => ['required', Rule::in(['actif', 'inactif'])],
+        ]);
+
+        $validated['est_chome'] = $request->boolean('est_chome');
+
+        JourFerie::create($validated);
+
+        return redirect()
+            ->route('admin.parametres.index')
+            ->with('activeTab', 'conges')
+            ->with('success', 'Jour férié ajouté avec succès.');
+    }
+
+    /**
+     * Modifier un jour férié.
+     */
+    public function updateJourFerie(Request $request, JourFerie $jourFerie)
+    {
+        $request->session()->flash('activeTab', 'conges');
+
+        $validated = $request->validate([
+            'nom' => ['required', 'string', 'max:150'],
+            'date' => [
+                'required',
+                'date',
+                Rule::unique('jours_feries', 'date')->ignore($jourFerie->id),
+            ],
+            'description' => ['nullable', 'string'],
+            'est_chome' => ['nullable', 'boolean'],
+            'statut' => ['required', Rule::in(['actif', 'inactif'])],
+        ]);
+
+        $validated['est_chome'] = $request->boolean('est_chome');
+
+        $jourFerie->update($validated);
+
+        return redirect()
+            ->route('admin.parametres.index')
+            ->with('activeTab', 'conges')
+            ->with('success', 'Jour férié modifié avec succès.');
+    }
+
+    /**
+     * Supprimer un jour férié.
+     */
+    public function destroyJourFerie(JourFerie $jourFerie)
+    {
+        $jourFerie->delete();
+
+        return redirect()
+            ->route('admin.parametres.index')
+            ->with('activeTab', 'conges')
+            ->with('success', 'Jour férié supprimé avec succès.');
     }
 }

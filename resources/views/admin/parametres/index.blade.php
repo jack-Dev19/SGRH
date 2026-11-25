@@ -6,7 +6,7 @@
 
 <div
     class="max-w-7xl mx-auto space-y-6"
-    x-data="{ activeTab: 'general' }"
+    x-data="{ activeTab: @js(session('activeTab', 'general')) }"
 >
 
     {{-- En-tête du centre de paramètres --}}
@@ -177,9 +177,14 @@
                     @include('admin.parametres.partials.securite')
                 </div>
 
+                {{-- Contenu Congés --}}
+                <div x-show="activeTab === 'conges'" x-cloak>
+                    @include('admin.parametres.partials.conges')
+                </div>
+
                 {{-- Contenus à développer --}}
                 <div
-                    x-show="!['general', 'notifications', 'securite'].includes(activeTab)"
+                    x-show="!['general', 'notifications', 'securite', 'conges'].includes(activeTab)"
                     x-cloak
                     class="py-10 text-center"
                 >

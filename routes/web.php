@@ -161,6 +161,34 @@ Route::middleware('auth')->group(function () {
 
         Route::get('/admin/parametres/jours-feries', [ParametreController::class, 'joursFeries'])
             ->name('admin.parametres.jours-feries');
+        
+        
+        // ==========================================================
+        // GESTION DES TYPES DE CONGÉS
+        // ==========================================================
+        
+        Route::post('/admin/parametres/types-conges', [ParametreController::class, 'storeTypeConge'])
+            ->name('admin.parametres.types-conges.store');
+        
+        Route::put('/admin/parametres/types-conges/{typeConge}', [ParametreController::class, 'updateTypeConge'])
+            ->name('admin.parametres.types-conges.update');
+        
+        Route::delete('/admin/parametres/types-conges/{typeConge}', [ParametreController::class, 'destroyTypeConge'])
+            ->name('admin.parametres.types-conges.destroy');
+        
+        
+        // ==========================================================
+        // GESTION DES JOURS FÉRIÉS
+        // ==========================================================
+        
+        Route::post('/admin/parametres/jours-feries', [ParametreController::class, 'storeJourFerie'])
+            ->name('admin.parametres.jours-feries.store');
+        
+        Route::put('/admin/parametres/jours-feries/{jourFerie}', [ParametreController::class, 'updateJourFerie'])
+            ->name('admin.parametres.jours-feries.update');
+        
+        Route::delete('/admin/parametres/jours-feries/{jourFerie}', [ParametreController::class, 'destroyJourFerie'])
+            ->name('admin.parametres.jours-feries.destroy');
 
         Route::post('/admin/parametres', [ParametreController::class, 'update'])
             ->name('admin.parametres.update');
