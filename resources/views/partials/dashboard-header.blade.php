@@ -23,9 +23,9 @@
     <div class="flex items-center gap-2 md:gap-3">
 
         {{-- Barre de recherche --}}
-        <div class="hidden md:flex items-center gap-2 bg-purple-50/80 border border-purple-100 rounded-full px-4 py-2 w-64 focus-within:ring-2 focus-within:ring-purple-400 transition">
+        {{-- <div class="hidden md:flex items-center gap-2 bg-purple-50/80 border border-purple-100 rounded-full px-4 py-2 w-64 focus-within:ring-2 focus-within:ring-purple-400 transition"> --}}
             {{-- Icône : Loupe --}}
-            <svg xmlns="http://www.w3.org/2000/svg"
+            {{-- <svg xmlns="http://www.w3.org/2000/svg"
                  class="h-4 w-4 text-purple-500 shrink-0"
                  fill="none"
                  viewBox="0 0 24 24"
@@ -39,7 +39,7 @@
             <input type="text"
                    placeholder="Recherche rapide..."
                    class="bg-transparent text-sm outline-none w-full text-slate-700 placeholder-slate-400">
-        </div>
+        </div> --}}
 
         {{-- Notifications --}}
         <a href="{{ route('notifications.index') }}"

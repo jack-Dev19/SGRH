@@ -40,7 +40,12 @@
     </div>
 
     {{-- Container Scanner --}}
-    <div id="attendance-scanner" data-scan-url="{{ route('gestion.pointage.enregistrer') }}" class="mb-8">
+    <div
+        id="attendance-scanner"
+        data-scan-url="{{ route('gestion.pointage.enregistrer') }}"
+        data-csrf-token="{{ csrf_token() }}"
+        class="mb-8"
+    >
         <div class="relative bg-white rounded-[40px] shadow-[0_20px_60px_-15px_rgba(147,51,234,0.3)] overflow-hidden">
             
             {{-- En-tête du scanner --}}

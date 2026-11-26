@@ -92,7 +92,7 @@
                         Sécurité
                     </button>
 
-                    <button
+                    {{-- <button
                         type="button"
                         @click="activeTab = 'paie'"
                         :class="activeTab === 'paie'
@@ -102,7 +102,7 @@
                         :aria-current="activeTab === 'paie' ? 'page' : null"
                     >
                         Paie
-                    </button>
+                    </button> --}}
 
                     <button
                         type="button"
@@ -116,7 +116,7 @@
                         Congés
                     </button>
 
-                    <button
+                    {{-- <button
                         type="button"
                         @click="activeTab = 'presence'"
                         :class="activeTab === 'presence'
@@ -150,7 +150,7 @@
                         :aria-current="activeTab === 'recrutement' ? 'page' : null"
                     >
                         Recrutement
-                    </button>
+                    </button> --}}
 
                 </nav>
 
