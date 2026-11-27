@@ -261,7 +261,7 @@
                         <th class="text-left px-6 py-3 text-xs font-bold text-slate-400 uppercase tracking-wider">Type</th>
                         <th class="text-left px-6 py-3 text-xs font-bold text-slate-400 uppercase tracking-wider hidden md:table-cell">Période</th>
                         <th class="text-left px-6 py-3 text-xs font-bold text-slate-400 uppercase tracking-wider">Durée</th>
-                        <th class="text-right px-6 py-3 text-xs font-bold text-slate-400 uppercase tracking-wider">Actions</th>
+                        {{-- <th class="text-right px-6 py-3 text-xs font-bold text-slate-400 uppercase tracking-wider">Actions</th> --}}
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-50">
@@ -291,7 +291,7 @@
                                 <span class="text-sm font-bold text-slate-900">{{ $conge->nombre_jours }}</span>
                                 <span class="text-[10px] text-slate-400 ml-1">jour(s)</span>
                             </td>
-                            <td class="px-6 py-4">
+                            {{-- <td class="px-6 py-4">
                                 <div class="flex items-center justify-end gap-1.5">
                                     <button class="inline-flex items-center gap-1 text-[10px] font-bold px-3 py-1.5 rounded-full bg-emerald-50 text-emerald-700 hover:bg-emerald-100 ring-1 ring-inset ring-emerald-200 transition">
                                         <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
@@ -302,7 +302,7 @@
                                         Refuser
                                     </button>
                                 </div>
-                            </td>
+                            </td> --}}
                         </tr>
                     @empty
                         <tr>

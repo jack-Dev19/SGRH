@@ -182,7 +182,7 @@
             {{-- COLONNE 4 : RESSOURCES                        --}}
             {{-- ============================================= --}}
 
-            <div>
+            {{-- <div>
 
                 <h4 class="text-[10px] font-bold uppercase tracking-[0.15em] text-purple-300 mb-4">
                     Ressources
@@ -201,7 +201,7 @@
                     <li><a href="#" class="text-slate-400 hover:text-white transition-colors duration-200">Webinaires</a></li>
 
                 </ul>
-            </div>
+            </div> --}}
 
 
             {{-- ============================================= --}}

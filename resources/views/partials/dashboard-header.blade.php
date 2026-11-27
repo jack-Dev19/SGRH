@@ -15,7 +15,7 @@
     {{-- Gauche : Titre --}}
     <div class="flex items-center gap-3 min-w-0">
         <h1 class="text-lg font-semibold text-slate-800 truncate">
-            @yield('page-title', 'Tableau de bord')
+            {{-- @yield('page-title', 'Tableau de bord') --}}
         </h1>
     </div>
 
